@@ -1,0 +1,648 @@
+/* =========================================================
+   PEGATINA INSTITUCIONAL CONAPDIS
+   public/css/pegatina.css
+   ========================================================= */
+
+
+/* =========================================================
+   PÁGINA
+   ========================================================= */
+
+@page {
+    size: 90mm 45mm;
+    margin: 0;
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+
+    font-family: "DejaVu Serif", serif;
+
+    background: #ffffff;
+}
+
+
+/* =========================================================
+   PLACA PRINCIPAL
+   ========================================================= */
+
+.pegatina {
+    position: absolute;
+
+    top: .5mm;
+    left: 1mm;
+
+    width: 83.2mm;
+    height: 39.2mm;
+
+    padding: 1.8mm;
+
+    background: #06194d;
+
+    border: .65mm solid #c9a945;
+
+    border-radius: 3mm;
+
+    overflow: hidden;
+}
+
+
+/* =========================================================
+   MARCOS DECORATIVOS
+   ========================================================= */
+
+.marco-externo {
+    position: absolute;
+
+    top: 1.3mm;
+    left: 1.3mm;
+    right: 1.3mm;
+    bottom: 1.3mm;
+
+    border: .25mm solid #e0c45c;
+
+    z-index: 1;
+}
+
+
+.marco-medio {
+    position: absolute;
+
+    top: 2.4mm;
+    left: 2.4mm;
+    right: 2.4mm;
+    bottom: 2.4mm;
+
+    border: .12mm solid #806821;
+
+    z-index: 1;
+}
+
+
+.marco-interno {
+    position: absolute;
+
+    top: 3.2mm;
+    left: 3.2mm;
+    right: 3.2mm;
+    bottom: 3.2mm;
+
+    border: .10mm solid #d6b94f;
+
+    z-index: 1;
+}
+
+
+/* =========================================================
+   ESQUINAS DECORATIVAS
+   ========================================================= */
+
+.esquina {
+    position: absolute;
+
+    width: 4mm;
+    height: 4mm;
+
+    z-index: 5;
+}
+
+
+.esquina:before {
+    content: "";
+
+    position: absolute;
+
+    top: 0;
+    left: 0;
+
+    width: 3.4mm;
+    height: .16mm;
+
+    background: #d8bc55;
+}
+
+
+.esquina:after {
+    content: "";
+
+    position: absolute;
+
+    top: 0;
+    left: 0;
+
+    width: .16mm;
+    height: 3.4mm;
+
+    background: #d8bc55;
+}
+
+
+.esquina-tl {
+    top: 3.7mm;
+    left: 3.7mm;
+}
+
+
+.esquina-tr {
+    top: 3.7mm;
+    right: 3.7mm;
+
+    transform: rotate(90deg);
+}
+
+
+.esquina-bl {
+    bottom: 3.7mm;
+    left: 3.7mm;
+
+    transform: rotate(-90deg);
+}
+
+
+.esquina-br {
+    bottom: 3.7mm;
+    right: 3.7mm;
+
+    transform: rotate(180deg);
+}
+
+
+/* =========================================================
+   CONTENIDO
+   ========================================================= */
+
+.contenido {
+    position: relative;
+
+    z-index: 10;
+
+    width: 79.5mm;
+
+    margin: 0 auto;
+
+    text-align: center;
+}
+
+
+/* =========================================================
+   CABECERA
+   ========================================================= */
+
+.cabecera {
+    width: 79.5mm;
+
+    height: 8.1mm;
+
+    border-collapse: collapse;
+
+    table-layout: fixed;
+}
+
+
+.cabecera td {
+    padding: 0;
+
+    vertical-align: top;
+}
+
+
+/* =========================================================
+   LOGO
+   ========================================================= */
+
+.logo-col {
+    width: 13mm;
+
+    text-align: left;
+
+    vertical-align: middle !important;
+}
+
+
+.logo {
+    width: 8mm;
+    height: 7mm;
+
+    margin-top: 2.5mm;
+
+    object-fit: contain;
+}
+
+
+/* =========================================================
+   IDENTIDAD INSTITUCIONAL
+   ========================================================= */
+
+.identidad {
+    text-align: center;
+
+    vertical-align: middle !important;
+
+    padding-top: 1.1mm !important;
+}
+
+
+.nombre {
+    color: #e5c75b;
+
+    font-size: 8.7pt;
+
+    font-weight: bold;
+
+    letter-spacing: .45mm;
+
+    line-height: 1;
+}
+
+
+.institucion {
+    margin-top: .65mm;
+
+    color: #ffffff;
+
+    font-family: Arial, sans-serif;
+
+    font-size: 2.75pt;
+
+    letter-spacing: .035mm;
+
+    line-height: 1;
+}
+
+
+.rif {
+    margin-top: .45mm;
+
+    color: #b9c2d3;
+
+    font-family: Arial, sans-serif;
+
+    font-size: 2.4pt;
+
+    line-height: 1;
+}
+
+
+/* =========================================================
+   ESTADO
+   ========================================================= */
+
+.estado-col {
+    width: 12mm;
+
+    text-align: right;
+
+    vertical-align: top !important;
+
+    padding-top: 1.2mm !important;
+
+    padding-right: 1mm !important;
+}
+
+
+.estado {
+    display: inline-block;
+
+    margin-top: 1.5mm;
+
+    padding: .65mm 1.35mm;
+
+    border-radius: 2mm;
+
+    font-family: Arial, sans-serif;
+
+    font-size: 3pt;
+
+    font-weight: bold;
+
+    text-transform: uppercase;
+
+    line-height: 1;
+
+    white-space: nowrap;
+}
+
+
+/* =========================================================
+   ESTADOS
+   ========================================================= */
+
+.operativo {
+    color: #ffffff;
+
+    background: #39752b;
+
+    border: .16mm solid #9bc77d;
+}
+
+
+.mantenimiento {
+    color: #ffffff;
+
+    background: #98690c;
+
+    border: .16mm solid #dfbd60;
+}
+
+
+.inoperativo {
+    color: #ffffff;
+
+    background: #a72b38;
+
+    border: .16mm solid #e4767d;
+}
+
+
+/* =========================================================
+   ORNAMENTO
+   ========================================================= */
+
+.ornamento {
+    width: 79.5mm;
+
+    height: .70mm;
+
+    text-align: center;
+
+    color: #d8bb53;
+
+    font-size: 3.2pt;
+
+    line-height: 1;
+}
+
+
+.ornamento-linea {
+    display: inline-block;
+
+    width: 8mm;
+    height: .12mm;
+
+    margin: 0 1mm;
+
+    background: #c6a63d;
+
+    vertical-align: middle;
+}
+
+
+/* =========================================================
+   TÍTULO PRINCIPAL
+   ========================================================= */
+
+.titulo {
+    width: 79.5mm;
+
+    color: #e5c75b;
+
+    font-size: 8.7pt;
+
+    font-weight: bold;
+
+    letter-spacing: .18mm;
+
+    line-height: 1;
+
+    text-align: center;
+}
+
+
+.titulo-sub {
+    margin-top: .25mm;
+
+    color: #d9dde5;
+
+    font-family: Arial, sans-serif;
+
+    font-size: 2.4pt;
+
+    letter-spacing: .22mm;
+
+    line-height: 1;
+}
+
+
+/* =========================================================
+   ÁREA DEL CÓDIGO DEL BIEN
+   ========================================================= */
+
+.codigo-area {
+    width: 79.5mm;
+
+    /*
+     * Mantiene el bloque del código arriba,
+     * aprovechando el espacio central disponible.
+     */
+    margin-top: -1.8mm;
+
+    text-align: center;
+}
+
+
+/* =========================================================
+   TÍTULO "PLACA"
+   ========================================================= */
+
+.codigo-titulo {
+    display: inline-block;
+
+    position: relative;
+    
+    top: 2.5mm;
+
+    padding: .22mm 2.3mm;
+
+    background: #06194d;
+
+    border: .16mm solid #c9a945;
+
+    border-radius: 1.4mm;
+
+    color: #e2c15a;
+
+    font-family: Arial, sans-serif;
+
+    font-size: 2.30pt;
+
+    font-weight: bold;
+
+    letter-spacing: .12mm;
+
+    line-height: 1;
+
+    z-index: 2;
+}
+
+
+/* =========================================================
+   CAJA DEL CÓDIGO DEL BIEN
+   ========================================================= */
+
+.codigo-box {
+    width: 54mm;
+
+    margin: -1.5mm auto 0 auto;
+
+    padding: .45mm 2mm;
+
+    background: #0a245e;
+
+    border: .20mm solid #d0b34b;
+
+    border-radius: 2mm;
+
+    text-align: center;
+}
+
+
+.codigo {
+    color: #ffffff;
+
+    font-size: 6.5pt;
+
+    font-weight: bold;
+
+    letter-spacing: .22mm;
+
+    line-height: 1;
+}
+
+
+/* =========================================================
+   TABLA DE DATOS
+   ========================================================= */
+
+.tabla-datos {
+    width: 79.5mm;
+
+    /*
+     * Mantiene la tabla cerca del código.
+     */
+    margin-top: 1mm;
+
+    border-collapse: collapse;
+
+    table-layout: fixed;
+
+    background: #091f57;
+
+    border: .22mm solid #c9a945;
+}
+
+
+/* =========================================================
+   CELDAS DE LA TABLA
+   ========================================================= */
+
+.tabla-datos td {
+    width: 50%;
+
+    padding: .42mm 1.3mm;
+
+    vertical-align: middle;
+
+    border-right: .14mm solid #816a25;
+
+    border-bottom: .14mm solid #816a25;
+}
+
+
+.tabla-datos td:last-child {
+    border-right: none;
+}
+
+
+.tabla-datos tr:last-child td {
+    border-bottom: none;
+}
+
+
+/* =========================================================
+   CAMPOS
+   ========================================================= */
+
+.campo {
+    text-align: left;
+}
+
+
+/* =========================================================
+   ETIQUETAS
+   ========================================================= */
+
+.campo-label {
+    color: #d8bb57;
+
+    font-family: Arial, sans-serif;
+
+    font-size: 2.20pt;
+
+    font-weight: bold;
+
+    letter-spacing: .10mm;
+
+    text-transform: uppercase;
+
+    line-height: 1;
+}
+
+
+/* =========================================================
+   VALORES
+   ========================================================= */
+
+.campo-valor {
+    margin-top: .30mm;
+
+    color: #ffffff;
+
+    font-size: 3.50pt;
+
+    font-weight: bold;
+
+    line-height: 1.02;
+
+    word-wrap: break-word;
+
+    overflow-wrap: break-word;
+}
+
+
+/* =========================================================
+   SEDE
+   ========================================================= */
+
+.sede {
+    color: #e4c65b;
+}
+
+
+/* =========================================================
+   PIE INSTITUCIONAL
+   ========================================================= */
+
+.footer {
+    position: absolute;
+
+    bottom: 4mm;
+
+    left: 7mm;
+    right: 7mm;
+
+    text-align: center;
+
+    color: #a4aec1;
+
+    font-family: Arial, sans-serif;
+
+    font-size: 2.15pt;
+
+    letter-spacing: .06mm;
+
+    line-height: 1;
+
+    white-space: nowrap;
+}

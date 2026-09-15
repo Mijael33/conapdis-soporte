@@ -1,0 +1,719 @@
+/*
+|--------------------------------------------------------------------------
+| SISTEMA DE GESTIÓN TÉCNICA CONAPDIS - ESTILOS INSTITUCIONALES
+|--------------------------------------------------------------------------
+| Identidad visual basada en el manual de marca CONAPDIS.
+| Paleta: Azul Institucional #003097, Amarillo #ffda00, Rojo #ef172f
+*/
+
+/* ============================================
+   VARIABLES CSS
+   ============================================ */
+:root {
+    --conapdis-azul: #003097;
+    --conapdis-azul-oscuro: #001e5c;
+    --conapdis-azul-claro: #1a4dbf;
+    --conapdis-amarillo: #ffda00;
+    --conapdis-rojo: #ef172f;
+    --conapdis-verde: #4c7f36;
+    --conapdis-gris-fondo: #f4f6f9;
+    --conapdis-blanco: #ffffff;
+    --conapdis-gris-borde: #e2e8f0;
+    --conapdis-gris-texto: #64748b;
+    --conapdis-texto-oscuro: #1e293b;
+    --conapdis-sombra-sm: 0 1px 3px rgba(0,0,0,0.08);
+    --conapdis-sombra-md: 0 4px 12px rgba(0,0,0,0.12);
+    --conapdis-sombra-lg: 0 8px 24px rgba(0,0,0,0.15);
+    --conapdis-radius: 12px;
+    --conapdis-radius-btn: 8px;
+    --conapdis-radius-badge: 50px;
+    --conapdis-font: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* ============================================
+   RESET Y TIPOGRAFÍA BASE
+   ============================================ */
+* {
+    font-family: var(--conapdis-font);
+    box-sizing: border-box;
+}
+
+body {
+    background-color: var(--conapdis-gris-fondo);
+    min-height: 100vh;
+    color: var(--conapdis-texto-oscuro);
+}
+
+/* ============================================
+   HEADER SUPERIOR (TOPBAR)
+   ============================================ */
+.app-header {
+    background: var(--conapdis-blanco);
+    height: 60px;
+    position: fixed;
+    top: 0;
+    right: 0;
+    left: 280px;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 2rem;
+    box-shadow: var(--conapdis-sombra-sm);
+    border-bottom: 3px solid transparent;
+    border-image: linear-gradient(
+        to right,
+        var(--conapdis-amarillo) 0%,
+        var(--conapdis-amarillo) 33.33%,
+        var(--conapdis-azul) 33.33%,
+        var(--conapdis-azul) 66.66%,
+        var(--conapdis-rojo) 66.66%,
+        var(--conapdis-rojo) 100%
+    ) 1;
+}
+
+.header-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--conapdis-azul-oscuro);
+}
+
+/* ============================================
+   AVATAR DE USUARIO
+   ============================================ */
+.user-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background-color: var(--conapdis-azul);
+    color: var(--conapdis-blanco);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    border: 2px solid var(--conapdis-amarillo);
+}
+
+/* ============================================
+   SIDEBAR DE NAVEGACIÓN
+   ============================================ */
+.app-sidebar {
+    background: linear-gradient(180deg, #003097 0%, #001e5c 100%);
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 280px;
+    overflow-y: auto;
+    z-index: 1001;
+    box-shadow: 4px 0 20px rgba(0,0,0,0.15);
+}
+
+.sidebar-logo {
+    padding: 1.5rem;
+    text-align: center;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.sidebar-logo img {
+    max-width: 130px;
+    height: auto;
+    margin-bottom: 0.5rem;
+}
+
+.sidebar-logo h3 {
+    color: var(--conapdis-blanco);
+    font-size: 0.8rem;
+    margin-top: 0.5rem;
+    font-weight: 400;
+    opacity: 0.8;
+}
+
+.login-logo {
+    display: none;
+}
+
+.nav-section-title {
+    padding: 0.5rem 1.5rem;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: rgba(255,255,255,0.4);
+    font-weight: 600;
+    margin-top: 1rem;
+}
+
+.nav-link {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1.5rem;
+    color: rgba(255,255,255,0.8);
+    text-decoration: none;
+    font-size: 0.925rem;
+    transition: all 150ms ease;
+    border-left: 3px solid transparent;
+}
+
+.nav-link i {
+    margin-right: 0.75rem;
+    width: 20px;
+    text-align: center;
+}
+
+.nav-link:hover {
+    background: rgba(255,255,255,0.08);
+    color: var(--conapdis-blanco);
+}
+
+.nav-link.active {
+    background: rgba(255,255,255,0.12);
+    color: var(--conapdis-amarillo);
+    border-left-color: var(--conapdis-amarillo);
+    font-weight: 600;
+}
+
+/* ============================================
+   CONTENIDO PRINCIPAL
+   ============================================ */
+.app-main {
+    margin-left: 280px;
+    margin-top: 60px;
+    padding: 2rem;
+    min-height: calc(100vh - 60px);
+}
+
+.page-title {
+    color: var(--conapdis-azul-oscuro);
+    font-weight: 700;
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+/* ============================================
+   TARJETAS KPI
+   ============================================ */
+.kpi-card {
+    background: var(--conapdis-blanco);
+    border-radius: var(--conapdis-radius);
+    padding: 1.5rem;
+    box-shadow: var(--conapdis-sombra-sm);
+    border-top: 4px solid;
+    transition: all 300ms ease;
+}
+
+.kpi-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--conapdis-sombra-lg);
+}
+
+.kpi-card.operativo,
+.kpi-card.disponible {
+    border-top-color: var(--conapdis-verde);
+}
+
+.kpi-card.mantenimiento {
+    border-top-color: var(--conapdis-amarillo);
+}
+
+.kpi-card.inoperativo {
+    border-top-color: var(--conapdis-rojo);
+}
+
+.kpi-card-title {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--conapdis-gris-texto);
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.kpi-card-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--conapdis-azul-oscuro);
+}
+
+/* ============================================
+   TABLAS DE DATOS
+   ============================================ */
+.card {
+    border-radius: var(--conapdis-radius);
+    border: none;
+    box-shadow: var(--conapdis-sombra-sm);
+}
+
+.table-header {
+    background: var(--conapdis-azul-oscuro) !important;
+    color: var(--conapdis-blanco) !important;
+}
+
+.table-header th {
+    color: rgba(255,255,255,0.95) !important;
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.table-hover tbody tr:hover {
+    background-color: #eff6ff;
+}
+
+/* ============================================
+   BADGES DE ESTATUS
+   ============================================ */
+.badge {
+    padding: 0.25rem 0.875rem;
+    border-radius: var(--conapdis-radius-badge);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.badge-operativo {
+    background: #ecfdf5;
+    color: #4c7f36;
+    border: 1px solid #bbf7d0;
+}
+
+.badge-mantenimiento {
+    background: #fefce8;
+    color: #a16207;
+    border: 1px solid #fef08a;
+}
+
+.badge-inoperativo {
+    background: #fef2f2;
+    color: #ef172f;
+    border: 1px solid #fecaca;
+}
+
+.badge-disponible {
+    background: #f0fdf4;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+}
+
+.badge-instalado {
+    background: #eff6ff;
+    color: #1e40af;
+    border: 1px solid #bfdbfe;
+}
+
+.badge-revision {
+    background: #fefce8;
+    color: #a16207;
+    border: 1px solid #fef08a;
+}
+
+.badge-reparado {
+    background: #ecfdf5;
+    color: #4c7f36;
+    border: 1px solid #bbf7d0;
+}
+
+/* ============================================
+   BOTONES INSTITUCIONALES
+   ============================================ */
+.btn-conapdis {
+    background-color: var(--conapdis-azul);
+    color: var(--conapdis-blanco);
+    border: none;
+    padding: 0.625rem 1.5rem;
+    border-radius: var(--conapdis-radius-btn);
+    font-weight: 600;
+    font-size: 0.875rem;
+    transition: all 150ms ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-conapdis:hover {
+    background-color: var(--conapdis-azul-oscuro);
+    color: var(--conapdis-amarillo);
+    transform: translateY(-1px);
+}
+
+.btn-outline-conapdis {
+    background: transparent;
+    color: var(--conapdis-azul);
+    border: 2px solid var(--conapdis-azul);
+    padding: 0.625rem 1.5rem;
+    border-radius: var(--conapdis-radius-btn);
+    font-weight: 600;
+    font-size: 0.875rem;
+    transition: all 150ms ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-outline-conapdis:hover {
+    background: var(--conapdis-azul);
+    color: var(--conapdis-blanco);
+}
+
+.btn-outline-danger {
+    background: transparent;
+    color: var(--conapdis-rojo);
+    border: 2px solid var(--conapdis-rojo);
+    padding: 0.625rem 1.5rem;
+    border-radius: var(--conapdis-radius-btn);
+    font-weight: 600;
+    font-size: 0.875rem;
+    transition: all 150ms ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-outline-danger:hover {
+    background: var(--conapdis-rojo);
+    color: var(--conapdis-blanco);
+}
+
+.btn-sm {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8rem;
+}
+
+/* ============================================
+   FORMULARIOS
+   ============================================ */
+.form-label {
+    font-weight: 600;
+    color: var(--conapdis-texto-oscuro);
+}
+
+.form-control,
+.form-select {
+    border-radius: var(--conapdis-radius-btn);
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--conapdis-gris-borde);
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--conapdis-azul);
+    box-shadow: 0 0 0 3px rgba(0,48,151,0.1);
+}
+
+/* ============================================
+   ALERTAS
+   ============================================ */
+.alert {
+    border-radius: var(--conapdis-radius-btn);
+    border: none;
+}
+
+/* ============================================
+   PAGINACIÓN
+   ============================================ */
+.pagination {
+    margin-top: 1rem;
+}
+
+.page-link {
+    color: var(--conapdis-azul);
+    border-radius: var(--conapdis-radius-btn);
+    margin: 0 2px;
+}
+
+.page-item.active .page-link {
+    background-color: var(--conapdis-azul);
+    border-color: var(--conapdis-azul);
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 768px) {
+    .app-sidebar {
+        display: none;
+    }
+    .app-header {
+        left: 0;
+    }
+    .app-main {
+        margin-left: 0;
+    }
+}
+
+/* ============================================
+   LOGIN
+   ============================================ */
+.login-body {
+    background: linear-gradient(135deg, var(--conapdis-azul-oscuro) 0%, var(--conapdis-azul) 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.login-card {
+    background: var(--conapdis-blanco);
+    border-radius: 16px;
+    padding: 3rem;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+
+.login-logo {
+    width: 70px;
+    height: 70px;
+    background: var(--conapdis-amarillo);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    color: var(--conapdis-azul-oscuro);
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+.login-title {
+    text-align: center;
+    color: var(--conapdis-azul-oscuro);
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.login-subtitle {
+    text-align: center;
+    color: var(--conapdis-gris-texto);
+    font-size: 0.875rem;
+    margin-bottom: 2rem;
+}
+
+.btn-login {
+    background: var(--conapdis-azul);
+    color: var(--conapdis-blanco);
+    border: none;
+    padding: 0.75rem;
+    border-radius: var(--conapdis-radius-btn);
+    font-weight: 600;
+    width: 100%;
+    transition: all 150ms ease;
+}
+
+.btn-login:hover {
+    background: var(--conapdis-azul-oscuro);
+    color: var(--conapdis-amarillo);
+}
+
+/* ============================================
+   UTILIDADES
+   ============================================ */
+.fw-semibold {
+    font-weight: 600;
+}
+
+.text-muted {
+    color: var(--conapdis-gris-texto) !important;
+}
+
+/* ================== PAGINACIÓN ================== */
+.pagination {
+    display: flex;
+    justify-content: center;
+    gap: 0.3rem;
+    margin-top: 1.5rem;
+}
+
+.pagination .page-item .page-link {
+    border-radius: 8px;
+    padding: 0.5rem 0.9rem;
+    color: var(--conapdis-azul);
+    border: 1px solid var(--conapdis-gris-borde);
+    background: var(--conapdis-blanco);
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+}
+
+.pagination .page-item.active .page-link {
+    background: var(--conapdis-azul);
+    color: var(--conapdis-amarillo);
+    border-color: var(--conapdis-azul);
+}
+
+.pagination .page-item .page-link:hover {
+    background: var(--conapdis-azul);
+    color: var(--conapdis-amarillo);
+    border-color: var(--conapdis-azul);
+}
+
+.pagination .page-item.disabled .page-link {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+/* Ocultar los SVG enormes de Laravel */
+.pagination svg {
+    width: 16px !important;
+    height: 16px !important;
+}
+
+/* ============================================
+   ESTILOS PARA ROLES Y PERMISOS
+   ============================================ */
+.form-check-input:checked {
+    background-color: #003097;
+    border-color: #003097;
+}
+
+.form-check-input:focus {
+    border-color: #1a4dbf;
+    box-shadow: 0 0 0 0.2rem rgba(0, 48, 151, 0.15);
+}
+
+.form-switch .form-check-input {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e");
+}
+
+.form-switch .form-check-input:checked {
+    background-color: #003097;
+}
+
+/* Cards de módulos */
+.card-header .form-check.form-switch {
+    margin-bottom: 0;
+}
+
+.card-header .form-check-label {
+    cursor: pointer;
+}
+
+/* Checkbox con fondo */
+.form-check.border {
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.form-check.border:hover {
+    background: #e0e7ff !important;
+    border-color: #003097 !important;
+}
+
+.form-check.border .form-check-input:checked ~ .form-check-label {
+    font-weight: 600;
+}
+
+/* ============================================
+   CARACTERÍSTICAS TÉCNICAS DINÁMICAS
+   ============================================ */
+.caracteristica-row {
+    padding: 8px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.caracteristica-row:hover {
+    background: #eff6ff;
+}
+
+.caracteristica-row input {
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+}
+
+.caracteristica-row input:focus {
+    border-color: #003097;
+    box-shadow: 0 0 0 0.15rem rgba(0, 48, 151, 0.15);
+}
+
+#caracteristicas-container {
+    min-height: 40px;
+}
+
+#caracteristicas-container:empty::before {
+    content: "Sin características agregadas. Presiona el botón para comenzar.";
+    color: #94a3b8;
+    font-style: italic;
+    font-size: 0.85rem;
+    display: block;
+    padding: 10px;
+    text-align: center;
+}
+
+/* Tabla de roles - mejoras visuales */
+.table-header th {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 700;
+    padding: 12px 16px;
+}
+
+.table tbody tr {
+    transition: background-color 0.15s ease;
+}
+
+.table tbody tr:hover {
+    background: #f8fafc;
+}
+
+/* Badges de roles */
+.badge.rounded-pill {
+    font-weight: 500;
+    padding: 5px 10px;
+}
+
+/* ============================================
+   COMPACTAR TABLAS CON MUCHAS COLUMNAS
+   ============================================ */
+.table td, .table th {
+    padding: 0.6rem 0.7rem;
+    font-size: 0.84rem;
+}
+
+.table .btn-sm {
+    padding: 0.25rem 0.45rem;
+    font-size: 0.75rem;
+}
+
+.table .btn-sm i {
+    font-size: 0.85rem;
+}
+
+.table .badge {
+    font-size: 0.7rem;
+    padding: 0.28rem 0.6rem;
+}
+
+/* ============================================
+   MODAL DE RESULTADO DE IMPORTACIÓN
+   ============================================ */
+#modalImportOverlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 99999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+#modalImportOverlay.mostrar {
+    display: flex !important;
+}
+#modalImportOverlay .modal-import-content {
+    background: white;
+    border-radius: 16px;
+    max-width: 800px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: modalImportSlide 0.3s ease-out;
+}
+@keyframes modalImportSlide {
+    from { transform: translateY(-30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
