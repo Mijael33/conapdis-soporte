@@ -48,7 +48,11 @@ class BienesExport implements FromCollection, WithHeadings, WithMapping, ShouldA
             'Sede',
             'Estatus',
             'Usuario Asignado',
-            'Valor Adquisición',
+            'Cédula',
+            'Cargo',
+            'Valor Prudencial (Bs.)',
+            'Valor Adquisición (Bs.)',
+            'Fecha Adquisición',
         ];
     }
 
@@ -67,7 +71,11 @@ class BienesExport implements FromCollection, WithHeadings, WithMapping, ShouldA
             $bien->sede ? $bien->sede->nombre_sede : 'N/A',
             $bien->estatus,
             $bien->usuario_asignado_nombre,
+            $bien->usuario_asignado_cedula,
+            $bien->usuario_asignado_cargo,
+            $bien->valor_prudencial,
             $bien->valor_adquisicion,
+            $bien->fecha_adquisicion ? $bien->fecha_adquisicion->format('d/m/Y') : null,
         ];
     }
 }

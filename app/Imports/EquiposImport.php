@@ -4,20 +4,23 @@ namespace App\Imports;
 
 use App\Models\Equipo;
 use App\Models\TipoEquipo;
-use App\Models\Departamento;
 use App\Models\Sede;
 use App\Models\Estado;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
-use Maatwebsite\Excel\Concerns\WithBatchInserts;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
 use Illuminate\Support\Facades\Auth;
 
-class EquiposImport implements ToModel, WithHeadingRow, WithBatchInserts, WithChunkReading, SkipsEmptyRows
+class EquiposImport implements ToModel, WithHeadingRow, WithChunkReading, SkipsEmptyRows
 {
     protected $service;
     protected $filaActual = 1;
+
+    /**
+     * Cache temporal para detectar duplicados dentro del mismo Excel.
+     */
+    protected array $codigosEnArchivo = [];
 
     public function __construct($service = null)
     {
@@ -37,9 +40,11 @@ class EquiposImport implements ToModel, WithHeadingRow, WithBatchInserts, WithCh
             $user = Auth::user();
             $esAdmin = $user->hasRole('Administrador');
 
-            // =====================================================
-            // VALIDACIONES MANUALES
-            // =====================================================
+            /*
+            |--------------------------------------------------------------------------
+            | VALIDACIONES MANUALES
+            |--------------------------------------------------------------------------
+            */
 
             if (empty($row['codigo_inventario'])) {
                 throw new \Exception('El campo "codigo_inventario" es obligatorio');
@@ -47,10 +52,6 @@ class EquiposImport implements ToModel, WithHeadingRow, WithBatchInserts, WithCh
 
             if (empty($row['tipo_equipo'])) {
                 throw new \Exception('El campo "tipo_equipo" es obligatorio');
-            }
-
-            if (empty($row['departamento'])) {
-                throw new \Exception('El campo "departamento" es obligatorio');
             }
 
             if (empty($row['sede'])) {
@@ -65,33 +66,47 @@ class EquiposImport implements ToModel, WithHeadingRow, WithBatchInserts, WithCh
                 throw new \Exception('El campo "modelo" es obligatorio');
             }
 
-            // =====================================================
-            // VERIFICAR DUPLICADOS
-            // =====================================================
+            /*
+            |--------------------------------------------------------------------------
+            | VERIFICAR DUPLICADOS DENTRO DEL MISMO ARCHIVO
+            |--------------------------------------------------------------------------
+            */
 
-            $existe = Equipo::where(
-                'codigo_inventario_institucional',
-                trim($row['codigo_inventario'])
-            )->exists();
+            $codigoTrim = trim($row['codigo_inventario']);
 
-            if ($existe) {
+            if (isset($this->codigosEnArchivo[$codigoTrim])) {
                 throw new \Exception(
-                    'El código "' . $row['codigo_inventario'] . '" ya existe en el sistema'
+                    'El código "' . $codigoTrim . '" está DUPLICADO dentro del mismo archivo (ya apareció en la fila ' .
+                    $this->codigosEnArchivo[$codigoTrim] . ')'
                 );
             }
 
-            // =====================================================
-            // OBTENER O CREAR TIPO DE EQUIPO
-            // =====================================================
+            /*
+            |--------------------------------------------------------------------------
+            | VERIFICAR DUPLICADOS CONTRA LA BASE DE DATOS
+            |--------------------------------------------------------------------------
+            */
+
+            if (Equipo::where('codigo_inventario_institucional', $codigoTrim)->exists()) {
+                throw new \Exception('El código "' . $codigoTrim . '" ya existe en la base de datos');
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | OBTENER O CREAR TIPO DE EQUIPO
+            |--------------------------------------------------------------------------
+            */
 
             $tipoEquipo = TipoEquipo::firstOrCreate(
                 ['nombre' => trim($row['tipo_equipo'])],
                 ['descripcion' => 'Creado automáticamente al importar']
             );
 
-            // =====================================================
-            // OBTENER O CREAR SEDE
-            // =====================================================
+            /*
+            |--------------------------------------------------------------------------
+            | OBTENER O CREAR SEDE
+            |--------------------------------------------------------------------------
+            */
 
             $sede = Sede::where('nombre_sede', trim($row['sede']))->first();
 
@@ -107,49 +122,48 @@ class EquiposImport implements ToModel, WithHeadingRow, WithBatchInserts, WithCh
                 }
             }
 
-            // =====================================================
-            // VALIDAR PERMISO POR SEDE
-            // =====================================================
+            /*
+            |--------------------------------------------------------------------------
+            | VALIDAR PERMISO POR SEDE
+            |--------------------------------------------------------------------------
+            */
 
             if (!$esAdmin && $sede && $sede->id !== $user->sede_id) {
-                throw new \Exception(
-                    'No tiene permiso para importar en la sede: ' . $row['sede']
-                );
+                throw new \Exception('No tiene permiso para importar en la sede: ' . $row['sede']);
             }
 
-            // =====================================================
-            // OBTENER O CREAR DEPARTAMENTO
-            // =====================================================
+            /*
+            |--------------------------------------------------------------------------
+            | VALIDAR Y NORMALIZAR VALORES
+            |--------------------------------------------------------------------------
+            */
 
-            $departamento = null;
-            if ($sede && !empty($row['departamento'])) {
-                $departamento = Departamento::firstOrCreate(
-                    [
-                        'sede_id' => $sede->id,
-                        'nombre_departamento' => trim($row['departamento'])
-                    ],
-                    [
-                        'piso' => null,
-                        'extension_telefonica' => null
-                    ]
-                );
-            }
+            $valorPrudencial = $this->parsearValor($row['valor_prudencial'] ?? null);
+            $valorAdquisicion = $this->parsearValor($row['valor_adquisicion'] ?? null);
 
-            // =====================================================
-            // CREAR EQUIPO
-            // =====================================================
+            /*
+            |--------------------------------------------------------------------------
+            | CREAR EQUIPO
+            |--------------------------------------------------------------------------
+            */
 
             $equipo = new Equipo([
-                'codigo_inventario_institucional' => trim($row['codigo_inventario']),
+                'codigo_inventario_institucional' => $codigoTrim,
                 'serial_chasis' => isset($row['serial_chasis']) ? trim($row['serial_chasis']) : null,
                 'tipo_equipo_id' => $tipoEquipo->id,
-                'departamento_id' => $departamento ? $departamento->id : null,
+                'sede_id' => $sede ? $sede->id : null,
                 'marca' => trim($row['marca']),
                 'modelo' => trim($row['modelo']),
+                'estatus_general' => $this->normalizarEstatusGeneral($row['estatus_general'] ?? null),
                 'usuario_asignado_nombre' => isset($row['usuario_nombre']) ? trim($row['usuario_nombre']) : null,
                 'usuario_asignado_cedula' => isset($row['usuario_cedula']) ? trim($row['usuario_cedula']) : null,
                 'usuario_asignado_cargo' => isset($row['usuario_cargo']) ? trim($row['usuario_cargo']) : null,
+                'valor_prudencial' => $valorPrudencial,
+                'valor_adquisicion' => $valorAdquisicion,
             ]);
+
+            // Guardar en cache temporal
+            $this->codigosEnArchivo[$codigoTrim] = $this->filaActual;
 
             if ($this->service) {
                 $this->service->registrarExito();
@@ -165,6 +179,8 @@ class EquiposImport implements ToModel, WithHeadingRow, WithBatchInserts, WithCh
                     [
                         'codigo' => $row['codigo_inventario'] ?? 'N/A',
                         'tipo' => $row['tipo_equipo'] ?? 'N/A',
+                        'marca' => $row['marca'] ?? 'N/A',
+                        'modelo' => $row['modelo'] ?? 'N/A',
                     ]
                 );
             }
@@ -173,9 +189,47 @@ class EquiposImport implements ToModel, WithHeadingRow, WithBatchInserts, WithCh
         }
     }
 
-    public function batchSize(): int
+    /**
+     * Convierte un valor de Excel a número decimal limpio.
+     */
+    private function parsearValor($valor)
     {
-        return 500;
+        if ($valor === null || $valor === '') {
+            return null;
+        }
+
+        if (is_numeric($valor)) {
+            return $valor;
+        }
+
+        $limpio = str_replace('.', '', (string) $valor);
+        $limpio = str_replace(',', '.', $limpio);
+
+        return is_numeric($limpio) ? $limpio : null;
+    }
+
+    /**
+     * Normaliza el estatus general del equipo.
+     */
+    private function normalizarEstatusGeneral($estatus)
+    {
+        if (empty($estatus)) {
+            return 'Operativo';
+        }
+
+        $estatus = mb_strtolower(trim($estatus));
+
+        $mapa = [
+            'operativo' => 'Operativo',
+            'en mantenimiento' => 'En Mantenimiento',
+            'mantenimiento' => 'En Mantenimiento',
+            'inoperativo' => 'Inoperativo',
+            'donado' => 'Donado/Desincorporado',
+            'donado/desincorporado' => 'Donado/Desincorporado',
+            'desincorporado' => 'Donado/Desincorporado',
+        ];
+
+        return $mapa[$estatus] ?? 'Operativo';
     }
 
     public function chunkSize(): int

@@ -76,13 +76,17 @@
         </tr>
     </table>
 
-    <div class="section-title">Datos de Adquisición</div>
+    <div class="section-title">Valoración</div>
     <table class="datos-table">
         <tr>
-            <td class="label">Valor (Bs.)</td>
-            <td>{{ $bien->valor_adquisicion ? number_format($bien->valor_adquisicion, 2, ',', '.') : 'N/A' }}</td>
+            <td class="label">Valor Prudencial</td>
+            <td>{{ $bien->valor_prudencial ? number_format($bien->valor_prudencial, 2, ',', '.') . ' Bs.' : 'N/A' }}</td>
+            <td class="label">Valor Adquisición</td>
+            <td>{{ $bien->valor_adquisicion ? number_format($bien->valor_adquisicion, 2, ',', '.') . ' Bs.' : 'N/A' }}</td>
+        </tr>
+        <tr>
             <td class="label">Fecha Adquisición</td>
-            <td>{{ $bien->fecha_adquisicion ? $bien->fecha_adquisicion->format('d/m/Y') : 'N/A' }}</td>
+            <td colspan="3">{{ $bien->fecha_adquisicion ? $bien->fecha_adquisicion->format('d/m/Y') : 'N/A' }}</td>
         </tr>
     </table>
 

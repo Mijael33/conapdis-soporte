@@ -8,6 +8,7 @@ use App\Models\Estado;
 use App\Models\Sede;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use App\Services\BitacoraService;
 use Spatie\Permission\Models\Role;
 
 class UsuarioController extends Controller
@@ -59,6 +60,13 @@ class UsuarioController extends Controller
             $roles = Role::whereIn('id', $validated['roles'])->get();
             $user->syncRoles($roles);
         }
+
+        BitacoraService::crear(
+            'usuarios',
+            $user,
+            'Usuario creado: ' . $user->name . ' (' . $user->email . ')',
+            $user->email
+        );
 
         return redirect()->route('admin.usuarios.index')->with('success', 'Usuario creado.');
     }
@@ -112,6 +120,8 @@ class UsuarioController extends Controller
 
         $validated = $request->validate($rules);
 
+        $datosAnteriores = $usuario->toArray();
+
         $data = ['name' => $validated['name'], 'email' => $validated['email']];
 
         if ($request->filled('password')) {
@@ -130,6 +140,14 @@ class UsuarioController extends Controller
             $usuario->syncRoles($roles);
         }
 
+        BitacoraService::editar(
+            'usuarios',
+            $usuario,
+            $datosAnteriores,
+            'Usuario actualizado: ' . $usuario->name . ' (' . $usuario->email . ')',
+            $usuario->email
+        );
+
         $redirect = $esAdmin ? 'admin.usuarios.index' : 'admin.dashboard';
         return redirect()->route($redirect)->with('success', 'Perfil actualizado.');
     }
@@ -140,6 +158,14 @@ class UsuarioController extends Controller
             abort(403);
         }
         $usuario = User::findOrFail($id);
+
+        BitacoraService::eliminar(
+            'usuarios',
+            $usuario,
+            'Usuario eliminado: ' . $usuario->name . ' (' . $usuario->email . ')',
+            $usuario->email
+        );
+
         $usuario->delete();
         return redirect()->route('admin.usuarios.index')->with('success', 'Usuario eliminado.');
     }

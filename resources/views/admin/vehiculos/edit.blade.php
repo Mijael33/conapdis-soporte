@@ -9,18 +9,15 @@
         <form action="{{ route('admin.vehiculos.update', $vehiculo) }}" method="POST">
             @csrf @method('PUT')
 
-            {{-- DATOS BÁSICOS --}}
             <h5 class="fw-bold mb-3" style="color: #1a3b5d;"><i class="bi bi-info-circle me-2"></i>Datos Básicos</h5>
             <div class="row g-3 mb-4">
                 <div class="col-md-3">
                     <label class="form-label fw-semibold">Código Inventario *</label>
                     <input type="text" name="codigo_inventario" class="form-control rounded-3" value="{{ old('codigo_inventario', $vehiculo->codigo_inventario) }}" required>
-                    @error('codigo_inventario') <small class="text-danger">{{ $message }}</small> @enderror
                 </div>
                 <div class="col-md-3">
                     <label class="form-label fw-semibold">Placa *</label>
                     <input type="text" name="placa" class="form-control rounded-3" value="{{ old('placa', $vehiculo->placa) }}" required>
-                    @error('placa') <small class="text-danger">{{ $message }}</small> @enderror
                 </div>
                 <div class="col-md-3">
                     <label class="form-label fw-semibold">Categoría *</label>
@@ -30,7 +27,6 @@
                             <option value="{{ $cat->id }}" {{ old('categoria_vehiculo_id', $vehiculo->categoria_vehiculo_id)==$cat->id ? 'selected' : '' }}>{{ $cat->nombre }}</option>
                         @endforeach
                     </select>
-                    @error('categoria_vehiculo_id') <small class="text-danger">{{ $message }}</small> @enderror
                 </div>
                 <div class="col-md-3">
                     <label class="form-label fw-semibold">Sede *</label>
@@ -40,22 +36,18 @@
                             <option value="{{ $sede->id }}" {{ old('sede_id', $vehiculo->sede_id)==$sede->id ? 'selected' : '' }}>{{ $sede->nombre_sede }} ({{ $sede->estado->nombre }})</option>
                         @endforeach
                     </select>
-                    @error('sede_id') <small class="text-danger">{{ $message }}</small> @enderror
                 </div>
             </div>
 
-            {{-- CARACTERÍSTICAS DEL VEHÍCULO --}}
             <h5 class="fw-bold mb-3" style="color: #1a3b5d;"><i class="bi bi-truck me-2"></i>Características del Vehículo</h5>
             <div class="row g-3 mb-4">
                 <div class="col-md-3">
                     <label class="form-label fw-semibold">Marca *</label>
                     <input type="text" name="marca" class="form-control rounded-3" value="{{ old('marca', $vehiculo->marca) }}" required>
-                    @error('marca') <small class="text-danger">{{ $message }}</small> @enderror
                 </div>
                 <div class="col-md-3">
                     <label class="form-label fw-semibold">Modelo *</label>
                     <input type="text" name="modelo" class="form-control rounded-3" value="{{ old('modelo', $vehiculo->modelo) }}" required>
-                    @error('modelo') <small class="text-danger">{{ $message }}</small> @enderror
                 </div>
                 <div class="col-md-2">
                     <label class="form-label fw-semibold">Año</label>
@@ -74,8 +66,8 @@
                     <input type="text" name="serial_motor" class="form-control rounded-3" value="{{ old('serial_motor', $vehiculo->serial_motor) }}">
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label fw-semibold">Serial Chasis</label>
-                    <input type="text" name="serial_chasis" class="form-control rounded-3" value="{{ old('serial_chasis', $vehiculo->serial_chasis) }}">
+                    <label class="form-label fw-semibold">Serial Carrocería</label>
+                    <input type="text" name="serial_carroceria" class="form-control rounded-3" value="{{ old('serial_carroceria', $vehiculo->serial_carroceria) }}">
                 </div>
                 <div class="col-md-4">
                     <label class="form-label fw-semibold">Estatus *</label>
@@ -87,7 +79,18 @@
                 </div>
             </div>
 
-            {{-- USUARIO ASIGNADO --}}
+            <h5 class="fw-bold mb-3" style="color: #1a3b5d;"><i class="bi bi-cash-coin me-2"></i>Valoración</h5>
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Valor Prudencial (Bs.)</label>
+                    <input type="number" step="0.01" min="0" name="valor_prudencial" class="form-control rounded-3" value="{{ old('valor_prudencial', $vehiculo->valor_prudencial) }}">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Valor de Adquisición (Bs.)</label>
+                    <input type="number" step="0.01" min="0" name="valor_adquisicion" class="form-control rounded-3" value="{{ old('valor_adquisicion', $vehiculo->valor_adquisicion) }}">
+                </div>
+            </div>
+
             <h5 class="fw-bold mb-3" style="color: #1a3b5d;"><i class="bi bi-person-badge me-2"></i>Usuario Asignado</h5>
             <div class="row g-3 mb-4">
                 <div class="col-md-4">
@@ -104,13 +107,11 @@
                 </div>
             </div>
 
-            {{-- OBSERVACIONES --}}
             <h5 class="fw-bold mb-3" style="color: #1a3b5d;"><i class="bi bi-chat-left-text me-2"></i>Observaciones</h5>
             <div class="mb-3">
                 <textarea name="observaciones" class="form-control rounded-3" rows="3">{{ old('observaciones', $vehiculo->observaciones) }}</textarea>
             </div>
 
-            {{-- BOTONES --}}
             <div class="d-flex gap-2 mt-4">
                 <button type="submit" class="btn-conapdis px-4"><i class="bi bi-check-lg"></i> Actualizar Vehículo</button>
                 <a href="{{ route('admin.vehiculos.index') }}" class="btn-outline-conapdis px-4">Cancelar</a>

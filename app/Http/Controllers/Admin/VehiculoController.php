@@ -8,8 +8,10 @@ use App\Models\CategoriaVehiculo;
 use App\Models\Sede;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use App\Traits\FiltroSedeTrait;
 use App\Services\ImportacionService;
+use App\Services\BitacoraService;
 use App\Imports\VehiculosImport;
 use App\Exports\VehiculosExport;
 use App\Exports\PlantillaVehiculosExport;
@@ -34,12 +36,8 @@ class VehiculoController extends Controller
             $query->whereIn('sede_id', $sedeIds);
         }
 
-        if ($request->categoria_id) {
-            $query->where('categoria_vehiculo_id', $request->categoria_id);
-        }
-        if ($request->estatus) {
-            $query->where('estatus', $request->estatus);
-        }
+        if ($request->categoria_id) $query->where('categoria_vehiculo_id', $request->categoria_id);
+        if ($request->estatus) $query->where('estatus', $request->estatus);
         if ($request->search) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
@@ -80,12 +78,32 @@ class VehiculoController extends Controller
             'anio' => 'nullable|integer',
             'color' => 'nullable|string|max:50',
             'serial_motor' => 'nullable|string|max:100',
-            'serial_chasis' => 'nullable|string|max:100',
+            'serial_carroceria' => 'nullable|string|max:100',
             'kilometraje' => 'nullable|integer',
+            'estatus' => 'nullable|in:Disponible,Asignado,En Mantenimiento,Desincorporado',
+            'usuario_asignado_nombre' => 'nullable|string|max:150',
+            'usuario_asignado_cedula' => 'nullable|string|max:20',
+            'usuario_asignado_cargo' => 'nullable|string|max:150',
+            'valor_prudencial' => 'nullable|numeric|min:0',
+            'valor_adquisicion' => 'nullable|numeric|min:0',
             'observaciones' => 'nullable|string',
         ]);
 
-        Vehiculo::create($validated);
+        if (empty($validated['valor_prudencial']) && empty($validated['valor_adquisicion'])) {
+            return back()->with('error', 'Debe ingresar al menos uno de los dos valores: Valor Prudencial o Valor de Adquisición.')->withInput();
+        }
+
+        $validated['estatus'] = $validated['estatus'] ?? 'Disponible';
+
+        $vehiculo = Vehiculo::create($validated);
+
+        BitacoraService::crear(
+            'vehiculos',
+            $vehiculo,
+            'Vehículo creado: ' . $vehiculo->placa . ' (' . $vehiculo->marca . ' ' . $vehiculo->modelo . ')',
+            $vehiculo->placa
+        );
+
         return redirect()->route('admin.vehiculos.index')->with('success', 'Vehículo creado exitosamente.');
     }
 
@@ -111,31 +129,45 @@ class VehiculoController extends Controller
             'anio' => 'nullable|integer',
             'color' => 'nullable|string|max:50',
             'serial_motor' => 'nullable|string|max:100',
-            'serial_chasis' => 'nullable|string|max:100',
+            'serial_carroceria' => 'nullable|string|max:100',
             'kilometraje' => 'nullable|integer',
             'estatus' => 'required|in:Disponible,Asignado,En Mantenimiento,Desincorporado',
             'usuario_asignado_nombre' => 'nullable|string|max:150',
             'usuario_asignado_cedula' => 'nullable|string|max:20',
             'usuario_asignado_cargo' => 'nullable|string|max:150',
+            'valor_prudencial' => 'nullable|numeric|min:0',
+            'valor_adquisicion' => 'nullable|numeric|min:0',
             'observaciones' => 'nullable|string',
         ]);
 
+        if (empty($validated['valor_prudencial']) && empty($validated['valor_adquisicion'])) {
+            return back()->with('error', 'Debe ingresar al menos uno de los dos valores: Valor Prudencial o Valor de Adquisición.')->withInput();
+        }
+
+        $datosAnteriores = $vehiculo->toArray();
+        $estatusAnterior = $vehiculo->estatus;
+
         $vehiculo->update($validated);
+
+        $descripcion = 'Vehículo actualizado: ' . $vehiculo->placa;
+        if ($estatusAnterior !== $validated['estatus']) {
+            $descripcion .= " (estatus: {$estatusAnterior} → {$validated['estatus']})";
+        }
+
+        BitacoraService::editar('vehiculos', $vehiculo, $datosAnteriores, $descripcion, $vehiculo->placa);
+
         return redirect()->route('admin.vehiculos.index')->with('success', 'Vehículo actualizado exitosamente.');
     }
 
     public function destroy($id)
     {
         $vehiculo = Vehiculo::findOrFail($id);
+
+        BitacoraService::eliminar('vehiculos', $vehiculo, 'Vehículo eliminado: ' . $vehiculo->placa, $vehiculo->placa);
+
         $vehiculo->delete();
         return redirect()->route('admin.vehiculos.index')->with('success', 'Vehículo eliminado exitosamente.');
     }
-
-    /*
-    |--------------------------------------------------------------------------
-    | IMPORTACIÓN Y EXPORTACIÓN
-    |--------------------------------------------------------------------------
-    */
 
     public function importar()
     {
@@ -144,24 +176,22 @@ class VehiculoController extends Controller
 
     public function procesarImportacion(Request $request)
     {
-        $request->validate([
-            'archivo' => 'required|file|mimes:xlsx,xls,csv|max:20480',
-        ]);
+        $request->validate(['archivo' => 'required|file|mimes:xlsx,xls,csv|max:20480']);
 
         try {
             $service = new ImportacionService('vehiculos');
             $import = new VehiculosImport($service);
-
             Excel::import($import, $request->file('archivo'));
 
             $resumen = $service->generarResumen();
 
+            BitacoraService::accion('vehiculos', 'importar', 'Importación masiva de vehículos: ' . $resumen['importados'] . ' importados, ' . $resumen['fallidos'] . ' fallidos', null, $resumen);
+
             return redirect()->route('admin.vehiculos.index')
                 ->with('importacion_resumen', $resumen)
                 ->with('success', 'Vehículos importados exitosamente.');
-
         } catch (\Exception $e) {
-            return back()->with('error', 'Error crítico en la importación: ' . $e->getMessage());
+            return back()->with('error', 'Error: ' . $e->getMessage());
         }
     }
 
@@ -169,7 +199,7 @@ class VehiculoController extends Controller
     {
         $ruta = 'importaciones/' . $archivo;
         if (!Storage::disk('public')->exists($ruta)) {
-            return back()->with('error', 'El archivo de errores no existe.');
+            return back()->with('error', 'El archivo no existe.');
         }
         return Storage::disk('public')->download($ruta);
     }
@@ -208,22 +238,13 @@ class VehiculoController extends Controller
         return Excel::download(new PlantillaVehiculosExport, 'plantilla-vehiculos.xlsx');
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | PDF INDIVIDUAL Y PEGATINA
-    |--------------------------------------------------------------------------
-    */
-
     public function pdfIndividual($id)
     {
         $vehiculo = Vehiculo::with(['categoria', 'sede.estado'])->findOrFail($id);
 
         $pdf = Pdf::loadView('admin.vehiculos.pdf_individual', compact('vehiculo'));
         $pdf->setPaper('letter', 'portrait');
-        $pdf->setOptions([
-            'isRemoteEnabled' => true,
-            'isHtml5ParserEnabled' => true,
-        ]);
+        $pdf->setOptions(['isRemoteEnabled' => true, 'isHtml5ParserEnabled' => true]);
 
         return $pdf->download('Ficha-Vehiculo-' . $vehiculo->placa . '.pdf');
     }
@@ -231,7 +252,7 @@ class VehiculoController extends Controller
     public function pdfPegatina($id)
     {
         $vehiculo = Vehiculo::with(['categoria', 'sede.estado'])->findOrFail($id);
-    
+
         $pdf = Pdf::loadView('admin.vehiculos.pdf_pegatina', compact('vehiculo'));
         $pdf->setPaper([0, 0, 90 * 2.83464567, 45 * 2.83464567]);
         $pdf->setOptions([
@@ -241,7 +262,7 @@ class VehiculoController extends Controller
             'defaultFont' => 'DejaVu Sans',
             'dpi' => 96,
         ]);
-    
+
         return $pdf->download('Pegatina-' . $vehiculo->placa . '.pdf');
     }
 }

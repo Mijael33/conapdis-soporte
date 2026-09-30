@@ -8,15 +8,17 @@ use App\Models\Sede;
 use App\Models\Estado;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
-use Maatwebsite\Excel\Concerns\WithBatchInserts;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
 use Illuminate\Support\Facades\Auth;
 
-class VehiculosImport implements ToModel, WithHeadingRow, WithBatchInserts, WithChunkReading, SkipsEmptyRows
+class VehiculosImport implements ToModel, WithHeadingRow, WithChunkReading, SkipsEmptyRows
 {
     protected $service;
     protected $filaActual = 1;
+
+    protected array $codigosEnArchivo = [];
+    protected array $placasEnArchivo = [];
 
     public function __construct($service = null)
     {
@@ -27,7 +29,6 @@ class VehiculosImport implements ToModel, WithHeadingRow, WithBatchInserts, With
     {
         $this->filaActual++;
 
-        // Saltar filas vacías
         if (empty($row['codigo_inventario']) && empty($row['placa'])) {
             return null;
         }
@@ -35,10 +36,6 @@ class VehiculosImport implements ToModel, WithHeadingRow, WithBatchInserts, With
         try {
             $user = Auth::user();
             $esAdmin = $user->hasRole('Administrador');
-
-            // =====================================================
-            // VALIDACIONES MANUALES
-            // =====================================================
 
             if (empty($row['codigo_inventario'])) {
                 throw new \Exception('El campo "codigo_inventario" es obligatorio');
@@ -64,44 +61,35 @@ class VehiculosImport implements ToModel, WithHeadingRow, WithBatchInserts, With
                 throw new \Exception('El campo "modelo" es obligatorio');
             }
 
-            // =====================================================
-            // VERIFICAR DUPLICADOS
-            // =====================================================
+            $codigoTrim = trim($row['codigo_inventario']);
+            $placaTrim = strtoupper(trim($row['placa']));
 
-            $existeCodigo = Vehiculo::where(
-                'codigo_inventario',
-                trim($row['codigo_inventario'])
-            )->exists();
-
-            if ($existeCodigo) {
+            if (isset($this->codigosEnArchivo[$codigoTrim])) {
                 throw new \Exception(
-                    'El código "' . $row['codigo_inventario'] . '" ya existe en el sistema'
+                    'El código "' . $codigoTrim . '" está DUPLICADO dentro del mismo archivo (ya apareció en la fila ' .
+                    $this->codigosEnArchivo[$codigoTrim] . ')'
                 );
             }
 
-            $existePlaca = Vehiculo::where(
-                'placa',
-                trim($row['placa'])
-            )->exists();
-
-            if ($existePlaca) {
+            if (isset($this->placasEnArchivo[$placaTrim])) {
                 throw new \Exception(
-                    'La placa "' . $row['placa'] . '" ya está registrada'
+                    'La placa "' . $placaTrim . '" está DUPLICADA dentro del mismo archivo (ya apareció en la fila ' .
+                    $this->placasEnArchivo[$placaTrim] . ')'
                 );
             }
 
-            // =====================================================
-            // OBTENER O CREAR CATEGORÍA
-            // =====================================================
+            if (Vehiculo::where('codigo_inventario', $codigoTrim)->exists()) {
+                throw new \Exception('El código "' . $codigoTrim . '" ya existe en la base de datos');
+            }
+
+            if (Vehiculo::where('placa', $placaTrim)->exists()) {
+                throw new \Exception('La placa "' . $placaTrim . '" ya existe en la base de datos');
+            }
 
             $categoria = CategoriaVehiculo::firstOrCreate(
                 ['nombre' => trim($row['categoria'])],
                 ['descripcion' => 'Creada automáticamente al importar']
             );
-
-            // =====================================================
-            // OBTENER O CREAR SEDE
-            // =====================================================
 
             $sede = Sede::where('nombre_sede', trim($row['sede']))->first();
 
@@ -117,35 +105,53 @@ class VehiculosImport implements ToModel, WithHeadingRow, WithBatchInserts, With
                 }
             }
 
-            // =====================================================
-            // VALIDAR PERMISO POR SEDE
-            // =====================================================
-
             if (!$esAdmin && $sede && $sede->id !== $user->sede_id) {
-                throw new \Exception(
-                    'No tiene permiso para importar en la sede: ' . $row['sede']
-                );
+                throw new \Exception('No tiene permiso para importar en la sede: ' . $row['sede']);
             }
 
-            // =====================================================
-            // CREAR VEHÍCULO
-            // =====================================================
+            $valorPrudencial = $this->parsearValor($row['valor_prudencial'] ?? null);
+            $valorAdquisicion = $this->parsearValor($row['valor_adquisicion'] ?? null);
+
+            /*
+            |--------------------------------------------------------------------------
+            | USUARIO ASIGNADO (acepta 2 formatos de nombre de columna)
+            |--------------------------------------------------------------------------
+            */
+            $usuarioNombre = $row['usuario_asignado_nombre']
+                ?? $row['usuario_nombre']
+                ?? null;
+            $usuarioCedula = $row['usuario_asignado_cedula']
+                ?? $row['usuario_cedula']
+                ?? null;
+            $usuarioCargo = $row['usuario_asignado_cargo']
+                ?? $row['usuario_cargo']
+                ?? null;
 
             $vehiculo = new Vehiculo([
-                'codigo_inventario' => trim($row['codigo_inventario']),
+                'codigo_inventario' => $codigoTrim,
                 'categoria_vehiculo_id' => $categoria->id,
                 'sede_id' => $sede ? $sede->id : ($esAdmin ? null : $user->sede_id),
-                'placa' => trim($row['placa']),
+                'placa' => $placaTrim,
                 'marca' => trim($row['marca']),
                 'modelo' => trim($row['modelo']),
                 'anio' => $row['anio'] ?? null,
                 'color' => isset($row['color']) ? trim($row['color']) : null,
                 'serial_motor' => isset($row['serial_motor']) ? trim($row['serial_motor']) : null,
-                'serial_chasis' => isset($row['serial_chasis']) ? trim($row['serial_chasis']) : null,
+                'serial_carroceria' => isset($row['serial_carroceria'])
+                    ? trim($row['serial_carroceria'])
+                    : (isset($row['serial_chasis']) ? trim($row['serial_chasis']) : null),
                 'kilometraje' => $row['kilometraje'] ?? 0,
                 'estatus' => $this->normalizarEstatus($row['estatus'] ?? null),
+                'usuario_asignado_nombre' => $usuarioNombre ? trim($usuarioNombre) : null,
+                'usuario_asignado_cedula' => $usuarioCedula ? trim($usuarioCedula) : null,
+                'usuario_asignado_cargo' => $usuarioCargo ? trim($usuarioCargo) : null,
+                'valor_prudencial' => $valorPrudencial,
+                'valor_adquisicion' => $valorAdquisicion,
                 'observaciones' => isset($row['observaciones']) ? trim($row['observaciones']) : null,
             ]);
+
+            $this->codigosEnArchivo[$codigoTrim] = $this->filaActual;
+            $this->placasEnArchivo[$placaTrim] = $this->filaActual;
 
             if ($this->service) {
                 $this->service->registrarExito();
@@ -161,6 +167,8 @@ class VehiculosImport implements ToModel, WithHeadingRow, WithBatchInserts, With
                     [
                         'codigo' => $row['codigo_inventario'] ?? 'N/A',
                         'placa' => $row['placa'] ?? 'N/A',
+                        'marca' => $row['marca'] ?? 'N/A',
+                        'modelo' => $row['modelo'] ?? 'N/A',
                     ]
                 );
             }
@@ -169,14 +177,20 @@ class VehiculosImport implements ToModel, WithHeadingRow, WithBatchInserts, With
         }
     }
 
-    /**
-     * Normaliza el estatus a un valor válido.
-     */
+    private function parsearValor($valor)
+    {
+        if ($valor === null || $valor === '') return null;
+        if (is_numeric($valor)) return $valor;
+
+        $limpio = str_replace('.', '', (string) $valor);
+        $limpio = str_replace(',', '.', $limpio);
+
+        return is_numeric($limpio) ? $limpio : null;
+    }
+
     private function normalizarEstatus($estatus)
     {
-        if (empty($estatus)) {
-            return 'Disponible';
-        }
+        if (empty($estatus)) return 'Disponible';
 
         $estatus = mb_strtolower(trim($estatus));
 
@@ -192,11 +206,6 @@ class VehiculosImport implements ToModel, WithHeadingRow, WithBatchInserts, With
         ];
 
         return $mapa[$estatus] ?? 'Disponible';
-    }
-
-    public function batchSize(): int
-    {
-        return 500;
     }
 
     public function chunkSize(): int

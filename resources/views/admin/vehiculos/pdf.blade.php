@@ -77,6 +77,8 @@
                 <th>Estado</th>
                 <th>Sede</th>
                 <th>Estatus</th>
+                <th>Val. Prud.</th>
+                <th>Val. Adq.</th>
             </tr>
         </thead>
         <tbody>
@@ -91,10 +93,12 @@
                 <td>{{ $v->sede->estado->nombre ?? 'N/A' }}</td>
                 <td>{{ $v->sede->nombre_sede ?? 'N/A' }}</td>
                 <td>{{ $v->estatus }}</td>
+                <td>{{ $v->valor_prudencial ? number_format($v->valor_prudencial, 2, ',', '.') : '-' }}</td>
+                <td>{{ $v->valor_adquisicion ? number_format($v->valor_adquisicion, 2, ',', '.') : '-' }}</td>
             </tr>
             @empty
             <tr>
-                <td colspan="9" style="text-align: center; color: #94a3b8; padding: 15px;">No hay vehículos registrados</td>
+                <td colspan="11" style="text-align: center; color: #94a3b8; padding: 15px;">No hay vehículos registrados</td>
             </tr>
             @endforelse
         </tbody>

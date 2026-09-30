@@ -15,28 +15,39 @@ class Equipo extends Model
         'codigo_inventario_institucional',
         'serial_chasis',
         'tipo_equipo_id',
-        'departamento_id',
+        'sede_id',
         'marca',
         'modelo',
         'estatus_general',
         'usuario_asignado_nombre',
         'usuario_asignado_cedula',
         'usuario_asignado_cargo',
+        'valor_prudencial',
+        'valor_adquisicion',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'valor_prudencial' => 'decimal:2',
+            'valor_adquisicion' => 'decimal:2',
+        ];
+    }
 
     /*
     |--------------------------------------------------------------------------
     | RELACIONES
     |--------------------------------------------------------------------------
     */
+
     public function tipoEquipo()
     {
         return $this->belongsTo(TipoEquipo::class, 'tipo_equipo_id');
     }
 
-    public function departamento()
+    public function sede()
     {
-        return $this->belongsTo(Departamento::class);
+        return $this->belongsTo(Sede::class);
     }
 
     public function componentes()

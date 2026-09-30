@@ -13,13 +13,10 @@ trait FiltroSedeTrait
         $estadoId = session('filtro_estado_id');
 
         if ($sedeId) {
-            $query->whereHas('departamento.sede', function ($q) use ($sedeId) {
-                $q->where('id', $sedeId);
-            });
+            $query->where('sede_id', $sedeId);
         } elseif ($estadoId) {
-            $query->whereHas('departamento.sede', function ($q) use ($estadoId) {
-                $q->where('estado_id', $estadoId);
-            });
+            $sedeIds = \App\Models\Sede::where('estado_id', $estadoId)->pluck('id');
+            $query->whereIn('sede_id', $sedeIds);
         }
 
         return $query;
@@ -27,6 +24,7 @@ trait FiltroSedeTrait
 
     /**
      * Aplica el filtro de sede a una query de Órdenes de Servicio.
+     * Las órdenes se relacionan con equipos, que ahora tienen sede_id directo.
      */
     protected function filtrarOrdenesPorSede($query)
     {
@@ -34,12 +32,13 @@ trait FiltroSedeTrait
         $estadoId = session('filtro_estado_id');
 
         if ($sedeId) {
-            $query->whereHas('equipo.departamento.sede', function ($q) use ($sedeId) {
-                $q->where('id', $sedeId);
+            $query->whereHas('equipo', function ($q) use ($sedeId) {
+                $q->where('sede_id', $sedeId);
             });
         } elseif ($estadoId) {
-            $query->whereHas('equipo.departamento.sede', function ($q) use ($estadoId) {
-                $q->where('estado_id', $estadoId);
+            $sedeIds = \App\Models\Sede::where('estado_id', $estadoId)->pluck('id');
+            $query->whereHas('equipo', function ($q) use ($sedeIds) {
+                $q->whereIn('sede_id', $sedeIds);
             });
         }
 

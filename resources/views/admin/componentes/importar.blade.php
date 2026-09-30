@@ -11,20 +11,24 @@
         <div class="alert alert-info">
             <h6 class="fw-bold"><i class="bi bi-info-circle me-2"></i>Formato del Excel</h6>
             <p class="mb-1">El archivo debe tener las siguientes columnas en la PRIMERA fila (encabezados):</p>
-            <table class="table table-sm table-bordered mt-2">
-                <thead class="table-header">
-                    <tr><th>Columna</th><th>Descripción</th><th>Obligatorio</th></tr>
-                </thead>
-                <tbody>
-                    <tr><td><code>categoria</code></td><td>Nombre de la categoría (debe existir en el sistema)</td><td>✅</td></tr>
-                    <tr><td><code>marca</code></td><td>Marca del componente</td><td>✅</td></tr>
-                    <tr><td><code>modelo</code></td><td>Modelo del componente</td><td>✅</td></tr>
-                    <tr><td><code>serial_unico</code></td><td>Serial único (no puede repetirse)</td><td>✅</td></tr>
-                    <tr><td><code>sede</code></td><td>Nombre de la sede (debe existir)</td><td>✅</td></tr>
-                    <tr><td><code>estatus</code></td><td>Disponible, Instalado, En Revisión, Desincorporado</td><td>❌ (default: Disponible)</td></tr>
-                    <tr><td><code>observaciones</code></td><td>Notas adicionales</td><td>❌</td></tr>
-                </tbody>
-            </table>
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered mt-2">
+                    <thead class="table-header">
+                        <tr><th>Columna</th><th>Descripción</th><th>Obligatorio</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><code>categoria</code></td><td>Nombre de la categoría (debe existir o se crea automáticamente)</td><td>✅</td></tr>
+                        <tr><td><code>marca</code></td><td>Marca del componente</td><td>✅</td></tr>
+                        <tr><td><code>modelo</code></td><td>Modelo del componente</td><td>✅</td></tr>
+                        <tr><td><code>serial_unico</code></td><td>Serial único (no puede repetirse)</td><td>✅</td></tr>
+                        <tr><td><code>sede</code></td><td>Nombre de la sede (debe existir o se crea automáticamente)</td><td>✅</td></tr>
+                        <tr><td><code>estatus</code></td><td>Disponible, Instalado, En Revisión, Desincorporado (por defecto: Disponible)</td><td>❌</td></tr>
+                        <tr><td><code>valor_prudencial</code></td><td>Valor prudencial del componente (al menos 1 valor obligatorio)</td><td>❌</td></tr>
+                        <tr><td><code>valor_adquisicion</code></td><td>Valor de adquisición (al menos 1 valor obligatorio)</td><td>❌</td></tr>
+                        <tr><td><code>observaciones</code></td><td>Notas adicionales</td><td>❌</td></tr>
+                    </tbody>
+                </table>
+            </div>
             <div class="mt-2">
                 <a href="{{ route('admin.componentes.plantilla') }}" class="btn btn-sm btn-outline-conapdis">
                     <i class="bi bi-download"></i> Descargar Plantilla de Ejemplo

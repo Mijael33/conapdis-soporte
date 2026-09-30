@@ -8,15 +8,16 @@ use App\Models\Sede;
 use App\Models\Estado;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
-use Maatwebsite\Excel\Concerns\WithBatchInserts;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
 use Illuminate\Support\Facades\Auth;
 
-class ComponentesImport implements ToModel, WithHeadingRow, WithBatchInserts, WithChunkReading, SkipsEmptyRows
+class ComponentesImport implements ToModel, WithHeadingRow, WithChunkReading, SkipsEmptyRows
 {
     protected $service;
     protected $filaActual = 1;
+
+    protected array $serialesEnArchivo = [];
 
     public function __construct($service = null)
     {
@@ -27,7 +28,6 @@ class ComponentesImport implements ToModel, WithHeadingRow, WithBatchInserts, Wi
     {
         $this->filaActual++;
 
-        // Saltar filas vacías
         if (empty($row['serial_unico']) && empty($row['marca'])) {
             return null;
         }
@@ -35,10 +35,6 @@ class ComponentesImport implements ToModel, WithHeadingRow, WithBatchInserts, Wi
         try {
             $user = Auth::user();
             $esAdmin = $user->hasRole('Administrador');
-
-            // =====================================================
-            // VALIDACIONES MANUALES
-            // =====================================================
 
             if (empty($row['serial_unico'])) {
                 throw new \Exception('El campo "serial_unico" es obligatorio');
@@ -60,33 +56,23 @@ class ComponentesImport implements ToModel, WithHeadingRow, WithBatchInserts, Wi
                 throw new \Exception('El campo "sede" es obligatorio');
             }
 
-            // =====================================================
-            // VERIFICAR DUPLICADOS
-            // =====================================================
+            $serialTrim = strtoupper(trim($row['serial_unico']));
 
-            $existe = Componente::where(
-                'serial_unico',
-                trim($row['serial_unico'])
-            )->exists();
-
-            if ($existe) {
+            if (isset($this->serialesEnArchivo[$serialTrim])) {
                 throw new \Exception(
-                    'El serial "' . $row['serial_unico'] . '" ya existe en el sistema'
+                    'El serial "' . $serialTrim . '" está DUPLICADO dentro del mismo archivo (ya apareció en la fila ' .
+                    $this->serialesEnArchivo[$serialTrim] . ')'
                 );
             }
 
-            // =====================================================
-            // OBTENER O CREAR CATEGORÍA
-            // =====================================================
+            if (Componente::where('serial_unico', $serialTrim)->exists()) {
+                throw new \Exception('El serial "' . $serialTrim . '" ya existe en la base de datos');
+            }
 
             $categoria = CategoriaComponente::firstOrCreate(
                 ['nombre' => trim($row['categoria'])],
                 ['descripcion' => 'Creada automáticamente al importar']
             );
-
-            // =====================================================
-            // OBTENER O CREAR SEDE
-            // =====================================================
 
             $sede = Sede::where('nombre_sede', trim($row['sede']))->first();
 
@@ -102,29 +88,26 @@ class ComponentesImport implements ToModel, WithHeadingRow, WithBatchInserts, Wi
                 }
             }
 
-            // =====================================================
-            // VALIDAR PERMISO POR SEDE
-            // =====================================================
-
             if (!$esAdmin && $sede && $sede->id !== $user->sede_id) {
-                throw new \Exception(
-                    'No tiene permiso para importar en la sede: ' . $row['sede']
-                );
+                throw new \Exception('No tiene permiso para importar en la sede: ' . $row['sede']);
             }
 
-            // =====================================================
-            // CREAR COMPONENTE
-            // =====================================================
+            $valorPrudencial = $this->parsearValor($row['valor_prudencial'] ?? null);
+            $valorAdquisicion = $this->parsearValor($row['valor_adquisicion'] ?? null);
 
             $componente = new Componente([
                 'categoria_componente_id' => $categoria->id,
                 'marca' => trim($row['marca']),
                 'modelo' => trim($row['modelo']),
-                'serial_unico' => trim($row['serial_unico']),
+                'serial_unico' => $serialTrim,
                 'sede_id' => $sede ? $sede->id : ($esAdmin ? null : $user->sede_id),
                 'estatus' => $this->normalizarEstatus($row['estatus'] ?? null),
+                'valor_prudencial' => $valorPrudencial,
+                'valor_adquisicion' => $valorAdquisicion,
                 'observaciones' => isset($row['observaciones']) ? trim($row['observaciones']) : null,
             ]);
+
+            $this->serialesEnArchivo[$serialTrim] = $this->filaActual;
 
             if ($this->service) {
                 $this->service->registrarExito();
@@ -140,6 +123,7 @@ class ComponentesImport implements ToModel, WithHeadingRow, WithBatchInserts, Wi
                     [
                         'serial' => $row['serial_unico'] ?? 'N/A',
                         'marca' => $row['marca'] ?? 'N/A',
+                        'modelo' => $row['modelo'] ?? 'N/A',
                     ]
                 );
             }
@@ -148,14 +132,20 @@ class ComponentesImport implements ToModel, WithHeadingRow, WithBatchInserts, Wi
         }
     }
 
-    /**
-     * Normaliza el estatus a un valor válido.
-     */
+    private function parsearValor($valor)
+    {
+        if ($valor === null || $valor === '') return null;
+        if (is_numeric($valor)) return $valor;
+
+        $limpio = str_replace('.', '', (string) $valor);
+        $limpio = str_replace(',', '.', $limpio);
+
+        return is_numeric($limpio) ? $limpio : null;
+    }
+
     private function normalizarEstatus($estatus)
     {
-        if (empty($estatus)) {
-            return 'Disponible';
-        }
+        if (empty($estatus)) return 'Disponible';
 
         $estatus = mb_strtolower(trim($estatus));
 
@@ -169,11 +159,6 @@ class ComponentesImport implements ToModel, WithHeadingRow, WithBatchInserts, Wi
         ];
 
         return $mapa[$estatus] ?? 'Disponible';
-    }
-
-    public function batchSize(): int
-    {
-        return 500;
     }
 
     public function chunkSize(): int

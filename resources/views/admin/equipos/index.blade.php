@@ -24,11 +24,11 @@
                 </select>
             </div>
             <div class="col-md-3">
-                <select name="departamento_id" class="form-select">
-                    <option value="">Todos los departamentos</option>
-                    @foreach($departamentos as $depto)
-                        <option value="{{ $depto->id }}" {{ request('departamento_id')==$depto->id ? 'selected' : '' }}>
-                            {{ $depto->nombre_departamento }} ({{ $depto->sede->nombre_sede }})
+                <select name="sede_id" class="form-select">
+                    <option value="">Todas las sedes</option>
+                    @foreach($sedes as $sede)
+                        <option value="{{ $sede->id }}" {{ request('sede_id')==$sede->id ? 'selected' : '' }}>
+                            {{ $sede->nombre_sede }} ({{ $sede->estado->nombre }})
                         </option>
                     @endforeach
                 </select>
@@ -45,7 +45,7 @@
                 <thead class="table-header">
                     <tr>
                         <th>Código</th><th>Tipo</th><th>Marca/Modelo</th>
-                        <th>Estado</th><th>Sede</th><th>Departamento</th>
+                        <th>Estado</th><th>Sede</th>
                         <th>Estatus</th><th class="text-center" style="width: 130px;">Acciones</th>
                     </tr>
                 </thead>
@@ -55,9 +55,8 @@
                         <td class="fw-semibold">{{ $equipo->codigo_inventario_institucional }}</td>
                         <td><span class="badge badge-instalado">{{ $equipo->tipoEquipo->nombre }}</span></td>
                         <td>{{ $equipo->marca }} {{ $equipo->modelo }}</td>
-                        <td>{{ $equipo->departamento->sede->estado->nombre }}</td>
-                        <td>{{ $equipo->departamento->sede->nombre_sede }}</td>
-                        <td>{{ $equipo->departamento->nombre_departamento }}</td>
+                        <td>{{ $equipo->sede->estado->nombre ?? 'N/A' }}</td>
+                        <td>{{ $equipo->sede->nombre_sede ?? 'N/A' }}</td>
                         <td>
                             @if($equipo->estatus_general=='Operativo')<span class="badge badge-operativo">Operativo</span>
                             @elseif($equipo->estatus_general=='En Mantenimiento')<span class="badge badge-mantenimiento">En Mant.</span>
@@ -74,7 +73,7 @@
                         </td>
                     </tr>
                     @empty
-                    <tr><td colspan="8" class="text-center text-muted py-4">No hay equipos registrados</td></tr>
+                    <tr><td colspan="7" class="text-center text-muted py-4">No hay equipos registrados</td></tr>
                     @endforelse
                 </tbody>
             </table>

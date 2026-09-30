@@ -91,6 +91,16 @@
         </tr>
     </table>
 
+    <div class="section-title">Valoración</div>
+    <table class="datos-table">
+        <tr>
+            <td class="label">Valor Prudencial</td>
+            <td>{{ $componente->valor_prudencial ? number_format($componente->valor_prudencial, 2, ',', '.') . ' Bs.' : 'N/A' }}</td>
+            <td class="label">Valor Adquisición</td>
+            <td>{{ $componente->valor_adquisicion ? number_format($componente->valor_adquisicion, 2, ',', '.') . ' Bs.' : 'N/A' }}</td>
+        </tr>
+    </table>
+
     @if($componente->caracteristicas_tecnicas && is_array($componente->caracteristicas_tecnicas))
     <div class="section-title">Características Técnicas</div>
     <table class="datos-table">

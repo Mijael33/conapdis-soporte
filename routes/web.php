@@ -4,8 +4,6 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\EstadoController;
-use App\Http\Controllers\Admin\SedeController;
-use App\Http\Controllers\Admin\DepartamentoController;
 use App\Http\Controllers\Admin\TipoEquipoController;
 use App\Http\Controllers\Admin\CategoriaComponenteController;
 use App\Http\Controllers\Admin\ComponenteController;
@@ -22,6 +20,7 @@ use App\Http\Controllers\Admin\VehiculoController;
 use App\Http\Controllers\Admin\CategoriaSonidoController;
 use App\Http\Controllers\Admin\EquipoSonidoController;
 use App\Http\Controllers\Admin\EntradaSalidaController;
+use App\Http\Controllers\Admin\ValorizacionController;
 
 Route::get('/login', function () { abort(404); });
 Route::get('/admin', function () { abort(404); });
@@ -130,14 +129,78 @@ Route::prefix('panel')->name('admin.')->middleware(['auth', 'filtro.sede'])->gro
     | ENTRADA/SALIDA
     |--------------------------------------------------------------------------
     */
-    Route::get('entrada-salida/exportar-excel', [EntradaSalidaController::class, 'exportarExcel'])->name('entrada-salida.exportar-excel')->middleware('permission:entrada-salida.exportar');
-    Route::get('entrada-salida/pdf-listado', [EntradaSalidaController::class, 'pdfListado'])->name('entrada-salida.pdf-listado')->middleware('permission:entrada-salida.ver');
-    Route::get('entrada-salida/{id}/pdf', [EntradaSalidaController::class, 'pdf'])->name('entrada-salida.pdf')->middleware('permission:entrada-salida.ver');
-    Route::resource('entrada-salida', EntradaSalidaController::class)->middleware('permission:entrada-salida.ver');
+    Route::get('entrada-salida/exportar-excel', [EntradaSalidaController::class, 'exportarExcel'])
+        ->name('entrada-salida.exportar-excel')
+        ->middleware('permission:entrada-salida.exportar');
+
+    Route::get('entrada-salida/pdf-listado', [EntradaSalidaController::class, 'pdfListado'])
+        ->name('entrada-salida.pdf-listado')
+        ->middleware('permission:entrada-salida.ver');
+
+    Route::get('entrada-salida/create', [EntradaSalidaController::class, 'create'])
+        ->name('entrada-salida.create')
+        ->middleware('permission:entrada-salida.crear');
+
+    Route::post('entrada-salida', [EntradaSalidaController::class, 'store'])
+        ->name('entrada-salida.store')
+        ->middleware('permission:entrada-salida.crear');
+
+    Route::get('entrada-salida', [EntradaSalidaController::class, 'index'])
+        ->name('entrada-salida.index')
+        ->middleware('permission:entrada-salida.ver');
+
+    Route::get('entrada-salida/{id}', [EntradaSalidaController::class, 'show'])
+        ->name('entrada-salida.show')
+        ->middleware('permission:entrada-salida.ver');
+
+    Route::get('entrada-salida/{id}/edit', [EntradaSalidaController::class, 'edit'])
+        ->name('entrada-salida.edit')
+        ->middleware('permission:entrada-salida.editar');
+
+    Route::put('entrada-salida/{id}', [EntradaSalidaController::class, 'update'])
+        ->name('entrada-salida.update')
+        ->middleware('permission:entrada-salida.editar');
+
+    Route::delete('entrada-salida/{id}', [EntradaSalidaController::class, 'destroy'])
+        ->name('entrada-salida.destroy')
+        ->middleware('permission:entrada-salida.eliminar');
+
+    Route::get('entrada-salida/{id}/registrar-entrada', [EntradaSalidaController::class, 'registrarEntrada'])
+        ->name('entrada-salida.registrar-entrada')
+        ->middleware('permission:entrada-salida.crear');
+
+    Route::post('entrada-salida/{id}/registrar-entrada', [EntradaSalidaController::class, 'storeEntrada'])
+        ->name('entrada-salida.store-entrada')
+        ->middleware('permission:entrada-salida.crear');
+
+    Route::get('entrada-salida/{id}/pdf-salida', [EntradaSalidaController::class, 'pdfSalida'])
+        ->name('entrada-salida.pdf-salida')
+        ->middleware('permission:entrada-salida.ver');
+
+    Route::get('entrada-salida/{id}/pdf-entrada', [EntradaSalidaController::class, 'pdfEntrada'])
+        ->name('entrada-salida.pdf-entrada')
+        ->middleware('permission:entrada-salida.ver');
 
     /*
     |--------------------------------------------------------------------------
-    | BITÁCORA
+    | VALORIZACIÓN DE INVENTARIO
+    |--------------------------------------------------------------------------
+    */
+    Route::get('valorizacion', [ValorizacionController::class, 'index'])
+        ->name('valorizacion.index')
+        ->middleware('permission:valorizacion.ver');
+
+    Route::get('valorizacion/pdf', [ValorizacionController::class, 'pdf'])
+        ->name('valorizacion.pdf')
+        ->middleware('permission:valorizacion.exportar');
+
+    Route::get('valorizacion/excel', [ValorizacionController::class, 'excel'])
+        ->name('valorizacion.excel')
+        ->middleware('permission:valorizacion.exportar');
+
+    /*
+    |--------------------------------------------------------------------------
+    | BITÁCORA GLOBAL
     |--------------------------------------------------------------------------
     */
     Route::get('bitacora', [BitacoraController::class, 'index'])->name('bitacora.index')->middleware('permission:bitacora.ver');
@@ -150,6 +213,13 @@ Route::prefix('panel')->name('admin.')->middleware(['auth', 'filtro.sede'])->gro
     */
     Route::get('reportes/equipo/{equipo}', [ReporteController::class, 'fichaTecnica'])->name('reportes.ficha-tecnica')->middleware('permission:reportes.generar');
     Route::get('reportes/orden/{ordene}', [ReporteController::class, 'ordenServicio'])->name('reportes.orden-servicio')->middleware('permission:reportes.generar');
+
+    /*
+    |--------------------------------------------------------------------------
+    | CATÁLOGOS BASE: ESTADOS (con sedes anidadas)
+    |--------------------------------------------------------------------------
+    */
+    Route::resource('estados', EstadoController::class)->middleware('permission:estados.ver');
 
     /*
     |--------------------------------------------------------------------------

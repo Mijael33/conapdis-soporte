@@ -5,7 +5,6 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use App\Models\Estado;
 use App\Models\Sede;
-use App\Models\Departamento;
 
 class EstructuraOrganizacionalSeeder extends Seeder
 {
@@ -80,32 +79,13 @@ class EstructuraOrganizacionalSeeder extends Seeder
             'Zulia' => ['nombre_sede' => 'Oficina Regional Zulia', 'direccion' => 'Av. 5 de Julio, Maracaibo', 'codigo_postal' => '4001'],
         ];
 
-        $sedes = [];
         foreach ($sedesData as $estadoNombre => $sedeData) {
-            $sedes[$estadoNombre] = Sede::create([
+            Sede::create([
                 'estado_id' => $estados[$estadoNombre]->id,
                 'nombre_sede' => $sedeData['nombre_sede'],
                 'direccion' => $sedeData['direccion'],
                 'codigo_postal' => $sedeData['codigo_postal'],
             ]);
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | DEPARTAMENTOS ESTÁNDAR POR SEDE
-        |--------------------------------------------------------------------------
-        */
-        $deptos = ['Dirección de Tecnología', 'Recursos Humanos', 'Administración', 'Atención al Ciudadano'];
-
-        foreach ($sedes as $sede) {
-            foreach ($deptos as $i => $nombre) {
-                Departamento::create([
-                    'sede_id' => $sede->id,
-                    'nombre_departamento' => $nombre,
-                    'piso' => $i + 1,
-                    'extension_telefonica' => '10' . ($i + 1) . '0',
-                ]);
-            }
         }
     }
 }

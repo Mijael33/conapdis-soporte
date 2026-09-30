@@ -2,75 +2,93 @@
 @section('title', 'Editar Equipo')
 @section('page-title', 'Editar Equipo')
 @section('content')
-<div class="card">
-    <div class="card-header bg-white py-3"><h5 class="mb-0 fw-bold">Editar: {{ $equipo->codigo_inventario_institucional }}</h5></div>
-    <div class="card-body">
+<div class="container-fluid">
+    <div class="card border-0 shadow-sm rounded-4 p-4">
         <form action="{{ route('admin.equipos.update', $equipo) }}" method="POST" id="formEquipo">
             @csrf @method('PUT')
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Código Inventario</label>
-                    <input type="text" name="codigo_inventario_institucional" class="form-control" value="{{ old('codigo_inventario_institucional', $equipo->codigo_inventario_institucional) }}" required>
+
+            <h5 class="fw-bold mb-3" style="color: #1a3b5d;"><i class="bi bi-info-circle me-2"></i>Datos Básicos</h5>
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Código Inventario *</label>
+                    <input type="text" name="codigo_inventario_institucional" class="form-control rounded-3" value="{{ old('codigo_inventario_institucional', $equipo->codigo_inventario_institucional) }}" required>
                     @error('codigo_inventario_institucional') <small class="text-danger">{{ $message }}</small> @enderror
                 </div>
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Serial Chasis</label>
-                    <input type="text" name="serial_chasis" class="form-control" value="{{ old('serial_chasis', $equipo->serial_chasis) }}">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Serial Chasis</label>
+                    <input type="text" name="serial_chasis" class="form-control rounded-3" value="{{ old('serial_chasis', $equipo->serial_chasis) }}">
                 </div>
             </div>
-            <div class="row">
-                <div class="col-md-3 mb-3">
-                    <label class="form-label">Tipo</label>
-                    <select name="tipo_equipo_id" class="form-select" required>
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Tipo *</label>
+                    <select name="tipo_equipo_id" class="form-select rounded-3" required>
                         @foreach($tiposEquipos as $tipo)
                             <option value="{{ $tipo->id }}" {{ old('tipo_equipo_id', $equipo->tipo_equipo_id)==$tipo->id ? 'selected' : '' }}>{{ $tipo->nombre }}</option>
                         @endforeach
                     </select>
                 </div>
-                <div class="col-md-3 mb-3">
-                    <label class="form-label">Marca</label>
-                    <input type="text" name="marca" class="form-control" value="{{ old('marca', $equipo->marca) }}" required>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Marca *</label>
+                    <input type="text" name="marca" class="form-control rounded-3" value="{{ old('marca', $equipo->marca) }}" required>
                 </div>
-                <div class="col-md-3 mb-3">
-                    <label class="form-label">Modelo</label>
-                    <input type="text" name="modelo" class="form-control" value="{{ old('modelo', $equipo->modelo) }}" required>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Modelo *</label>
+                    <input type="text" name="modelo" class="form-control rounded-3" value="{{ old('modelo', $equipo->modelo) }}" required>
                 </div>
-                <div class="col-md-3 mb-3">
-                    <label class="form-label">Estatus</label>
-                    <select name="estatus_general" class="form-select" required>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Estatus *</label>
+                    <select name="estatus_general" class="form-select rounded-3" required>
                         @foreach(['Operativo','En Mantenimiento','Inoperativo','Donado/Desincorporado'] as $e)
                             <option value="{{ $e }}" {{ old('estatus_general', $equipo->estatus_general)==$e ? 'selected' : '' }}>{{ $e }}</option>
                         @endforeach
                     </select>
                 </div>
             </div>
-            <div class="mb-3">
-                <label class="form-label">Departamento</label>
-                <select name="departamento_id" class="form-select" required>
-                    @foreach($departamentos as $depto)
-                        <option value="{{ $depto->id }}" {{ old('departamento_id', $equipo->departamento_id)==$depto->id ? 'selected' : '' }}>{{ $depto->nombre_departamento }} ({{ $depto->sede->nombre_sede }})</option>
-                    @endforeach
-                </select>
-            </div>
 
-            <h6 class="fw-bold mt-3">Usuario Asignado</h6>
-            <div class="row">
-                <div class="col-md-4 mb-3">
-                    <label class="form-label">Nombre</label>
-                    <input type="text" name="usuario_asignado_nombre" class="form-control" value="{{ old('usuario_asignado_nombre', $equipo->usuario_asignado_nombre) }}">
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label class="form-label">Cédula</label>
-                    <input type="text" name="usuario_asignado_cedula" class="form-control" value="{{ old('usuario_asignado_cedula', $equipo->usuario_asignado_cedula) }}">
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label class="form-label">Cargo</label>
-                    <input type="text" name="usuario_asignado_cargo" class="form-control" value="{{ old('usuario_asignado_cargo', $equipo->usuario_asignado_cargo) }}">
+            <div class="row g-3 mb-4">
+                <div class="col-md-12">
+                    <label class="form-label fw-semibold">Sede *</label>
+                    <select name="sede_id" class="form-select rounded-3" required>
+                        @foreach($sedes as $sede)
+                            <option value="{{ $sede->id }}" {{ old('sede_id', $equipo->sede_id)==$sede->id ? 'selected' : '' }}>{{ $sede->nombre_sede }} ({{ $sede->estado->nombre }})</option>
+                        @endforeach
+                    </select>
+                    @error('sede_id') <small class="text-danger">{{ $message }}</small> @enderror
                 </div>
             </div>
 
-            {{-- Sistemas Operativos --}}
-            <h6 class="fw-bold mt-3">Sistemas Operativos</h6>
+            {{-- VALORACIÓN --}}
+            <h5 class="fw-bold mb-3 mt-4" style="color: #1a3b5d;"><i class="bi bi-cash-coin me-2"></i>Valoración</h5>
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Valor Prudencial (Bs.)</label>
+                    <input type="number" step="0.01" min="0" name="valor_prudencial" class="form-control rounded-3" value="{{ old('valor_prudencial', $equipo->valor_prudencial) }}">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Valor de Adquisición (Bs.)</label>
+                    <input type="number" step="0.01" min="0" name="valor_adquisicion" class="form-control rounded-3" value="{{ old('valor_adquisicion', $equipo->valor_adquisicion) }}">
+                </div>
+            </div>
+
+            <h5 class="fw-bold mb-3 mt-4" style="color: #1a3b5d;"><i class="bi bi-person-badge me-2"></i>Usuario Asignado</h5>
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Nombre</label>
+                    <input type="text" name="usuario_asignado_nombre" class="form-control rounded-3" value="{{ old('usuario_asignado_nombre', $equipo->usuario_asignado_nombre) }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Cédula</label>
+                    <input type="text" name="usuario_asignado_cedula" class="form-control rounded-3" value="{{ old('usuario_asignado_cedula', $equipo->usuario_asignado_cedula) }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Cargo</label>
+                    <input type="text" name="usuario_asignado_cargo" class="form-control rounded-3" value="{{ old('usuario_asignado_cargo', $equipo->usuario_asignado_cargo) }}">
+                </div>
+            </div>
+
+            <h5 class="fw-bold mb-3 mt-4" style="color: #1a3b5d;"><i class="bi bi-microsoft me-2"></i>Sistemas Operativos</h5>
             <div id="so-container">
                 @if($equipo->sistemasOperativos->count() > 0)
                     @foreach($equipo->sistemasOperativos as $index => $so)

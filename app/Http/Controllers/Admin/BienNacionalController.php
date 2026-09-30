@@ -8,8 +8,10 @@ use App\Models\CategoriaBien;
 use App\Models\Sede;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use App\Traits\FiltroSedeTrait;
 use App\Services\ImportacionService;
+use App\Services\BitacoraService;
 use App\Imports\BienesImport;
 use App\Exports\BienesExport;
 use App\Exports\PlantillaBienesExport;
@@ -34,12 +36,8 @@ class BienNacionalController extends Controller
             $query->whereIn('sede_id', $sedeIds);
         }
 
-        if ($request->categoria_id) {
-            $query->where('categoria_bien_id', $request->categoria_id);
-        }
-        if ($request->estatus) {
-            $query->where('estatus', $request->estatus);
-        }
+        if ($request->categoria_id) $query->where('categoria_bien_id', $request->categoria_id);
+        if ($request->estatus) $query->where('estatus', $request->estatus);
         if ($request->search) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
@@ -80,15 +78,32 @@ class BienNacionalController extends Controller
             'serial' => 'nullable|string|max:150',
             'color' => 'nullable|string|max:50',
             'material' => 'nullable|string|max:100',
+            'estatus' => 'nullable|in:Disponible,Asignado,En Mantenimiento,Desincorporado',
             'usuario_asignado_nombre' => 'nullable|string|max:150',
             'usuario_asignado_cedula' => 'nullable|string|max:20',
             'usuario_asignado_cargo' => 'nullable|string|max:150',
-            'valor_adquisicion' => 'nullable|numeric',
+            'valor_prudencial' => 'nullable|numeric|min:0',
+            'valor_adquisicion' => 'nullable|numeric|min:0',
             'fecha_adquisicion' => 'nullable|date',
             'observaciones' => 'nullable|string',
         ]);
 
-        BienNacional::create($validated);
+        if (empty($validated['valor_prudencial']) && empty($validated['valor_adquisicion'])) {
+            return back()->with('error', 'Debe ingresar al menos uno de los dos valores: Valor Prudencial o Valor de Adquisición.')->withInput();
+        }
+
+        // Default estatus si no viene
+        $validated['estatus'] = $validated['estatus'] ?? 'Disponible';
+
+        $bien = BienNacional::create($validated);
+
+        BitacoraService::crear(
+            'bienes',
+            $bien,
+            'Bien creado: ' . $bien->codigo_inventario . ' (' . Str::limit($bien->descripcion, 50) . ')',
+            $bien->codigo_inventario
+        );
+
         return redirect()->route('admin.bienes.index')->with('success', 'Bien creado exitosamente.');
     }
 
@@ -118,27 +133,38 @@ class BienNacionalController extends Controller
             'usuario_asignado_nombre' => 'nullable|string|max:150',
             'usuario_asignado_cedula' => 'nullable|string|max:20',
             'usuario_asignado_cargo' => 'nullable|string|max:150',
-            'valor_adquisicion' => 'nullable|numeric',
+            'valor_prudencial' => 'nullable|numeric|min:0',
+            'valor_adquisicion' => 'nullable|numeric|min:0',
             'fecha_adquisicion' => 'nullable|date',
             'observaciones' => 'nullable|string',
         ]);
 
+        if (empty($validated['valor_prudencial']) && empty($validated['valor_adquisicion'])) {
+            return back()->with('error', 'Debe ingresar al menos uno de los dos valores: Valor Prudencial o Valor de Adquisición.')->withInput();
+        }
+
+        $datosAnteriores = $bien->toArray();
+        $estatusAnterior = $bien->estatus;
+
         $bien->update($validated);
+
+        $descripcion = 'Bien actualizado: ' . $bien->codigo_inventario;
+        if ($estatusAnterior !== $validated['estatus']) {
+            $descripcion .= " (estatus: {$estatusAnterior} → {$validated['estatus']})";
+        }
+
+        BitacoraService::editar('bienes', $bien, $datosAnteriores, $descripcion, $bien->codigo_inventario);
+
         return redirect()->route('admin.bienes.index')->with('success', 'Bien actualizado exitosamente.');
     }
 
     public function destroy($id)
     {
         $bien = BienNacional::findOrFail($id);
+        BitacoraService::eliminar('bienes', $bien, 'Bien eliminado: ' . $bien->codigo_inventario, $bien->codigo_inventario);
         $bien->delete();
         return redirect()->route('admin.bienes.index')->with('success', 'Bien eliminado exitosamente.');
     }
-
-    /*
-    |--------------------------------------------------------------------------
-    | IMPORTACIÓN Y EXPORTACIÓN
-    |--------------------------------------------------------------------------
-    */
 
     public function importar()
     {
@@ -147,24 +173,16 @@ class BienNacionalController extends Controller
 
     public function procesarImportacion(Request $request)
     {
-        $request->validate([
-            'archivo' => 'required|file|mimes:xlsx,xls,csv|max:20480',
-        ]);
-
+        $request->validate(['archivo' => 'required|file|mimes:xlsx,xls,csv|max:20480']);
         try {
             $service = new ImportacionService('bienes');
             $import = new BienesImport($service);
-
             Excel::import($import, $request->file('archivo'));
-
             $resumen = $service->generarResumen();
-
-            return redirect()->route('admin.bienes.index')
-                ->with('importacion_resumen', $resumen)
-                ->with('success', 'Bienes importados exitosamente.');
-
+            BitacoraService::accion('bienes', 'importar', 'Importación masiva de bienes: ' . $resumen['importados'] . ' importados, ' . $resumen['fallidos'] . ' fallidos', null, $resumen);
+            return redirect()->route('admin.bienes.index')->with('importacion_resumen', $resumen)->with('success', 'Bienes importados exitosamente.');
         } catch (\Exception $e) {
-            return back()->with('error', 'Error crítico en la importación: ' . $e->getMessage());
+            return back()->with('error', 'Error: ' . $e->getMessage());
         }
     }
 
@@ -172,7 +190,7 @@ class BienNacionalController extends Controller
     {
         $ruta = 'importaciones/' . $archivo;
         if (!Storage::disk('public')->exists($ruta)) {
-            return back()->with('error', 'El archivo de errores no existe.');
+            return back()->with('error', 'El archivo no existe.');
         }
         return Storage::disk('public')->download($ruta);
     }
@@ -211,30 +229,18 @@ class BienNacionalController extends Controller
         return Excel::download(new PlantillaBienesExport, 'plantilla-bienes.xlsx');
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | PDF INDIVIDUAL Y PEGATINA
-    |--------------------------------------------------------------------------
-    */
-
     public function pdfIndividual($id)
     {
         $bien = BienNacional::with(['categoria', 'sede.estado'])->findOrFail($id);
-
         $pdf = Pdf::loadView('admin.bienes.pdf_individual', compact('bien'));
         $pdf->setPaper('letter', 'portrait');
-        $pdf->setOptions([
-            'isRemoteEnabled' => true,
-            'isHtml5ParserEnabled' => true,
-        ]);
-
+        $pdf->setOptions(['isRemoteEnabled' => true, 'isHtml5ParserEnabled' => true]);
         return $pdf->download('Ficha-Bien-' . $bien->codigo_inventario . '.pdf');
     }
 
     public function pdfPegatina($id)
     {
         $bien = BienNacional::with(['categoria', 'sede.estado'])->findOrFail($id);
-    
         $pdf = Pdf::loadView('admin.bienes.pdf_pegatina', compact('bien'));
         $pdf->setPaper([0, 0, 90 * 2.83464567, 45 * 2.83464567]);
         $pdf->setOptions([
@@ -244,7 +250,6 @@ class BienNacionalController extends Controller
             'defaultFont' => 'DejaVu Sans',
             'dpi' => 96,
         ]);
-    
         return $pdf->download('Pegatina-' . $bien->codigo_inventario . '.pdf');
     }
 }

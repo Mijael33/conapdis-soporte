@@ -22,8 +22,8 @@
                     <tr><th class="w-25">Código Inventario</th><td class="fw-bold">{{ $equipo->codigo_inventario_institucional }}</td></tr>
                     <tr><th>Serial Chasis</th><td>{{ $equipo->serial_chasis ?? 'N/A' }}</td></tr>
                     <tr><th>Tipo</th><td>{{ $equipo->tipoEquipo->nombre ?? 'N/A' }}</td></tr>
-                    <tr><th>Marca/Modelo</th><td>{{ $equipo->marca }} {{ $equipo->modelo }}</td></tr>
-                    <tr><th>Departamento</th><td>{{ $equipo->departamento->nombre_departamento ?? 'N/A' }} - {{ $equipo->departamento->sede->nombre_sede ?? 'N/A' }} ({{ $equipo->departamento->sede->estado->nombre ?? 'N/A' }})</td></tr>
+                    <tr><th>Marca/Modelo</th><td>{{ $equipo->marca }} {{$equipo->modelo }}</td></tr>
+                    <tr><th>Sede</th><td>{{ $equipo->sede->nombre_sede ?? 'N/A' }} ({{ $equipo->sede->estado->nombre ?? 'N/A' }})</td></tr>
                     <tr><th>Estatus</th><td>
                         @if($equipo->estatus_general=='Operativo')<span class="badge badge-operativo">Operativo</span>
                         @elseif($equipo->estatus_general=='En Mantenimiento')<span class="badge badge-mantenimiento">En Mantenimiento</span>
@@ -32,6 +32,8 @@
                     <tr><th>Usuario Asignado</th><td>{{ $equipo->usuario_asignado_nombre ?? 'No asignado' }}</td></tr>
                     <tr><th>Cédula</th><td>{{ $equipo->usuario_asignado_cedula ?? 'N/A' }}</td></tr>
                     <tr><th>Cargo</th><td>{{ $equipo->usuario_asignado_cargo ?? 'N/A' }}</td></tr>
+                    <tr><th>Valor Prudencial</th><td>{{ $equipo->valor_prudencial ? number_format($equipo->valor_prudencial, 2, ',', '.') . ' Bs.' : 'N/A' }}</td></tr>
+                    <tr><th>Valor Adquisición</th><td>{{ $equipo->valor_adquisicion ? number_format($equipo->valor_adquisicion, 2, ',', '.') . ' Bs.' : 'N/A' }}</td></tr>
                 </table>
             </div>
         </div>
@@ -123,12 +125,12 @@
                     <div class="border rounded p-3 mb-2">
                         <div class="d-flex justify-content-between align-items-start">
                             <div>
-                                <strong>{{ $comp->marca }} {{ $comp->modelo }}</strong>
+                                <strong>{{ $comp->marca }} {{$comp->modelo }}</strong>
                                 <br><small class="text-muted">{{ $comp->categoria->nombre ?? 'N/A' }}</small>
                                 <br><small class="text-muted"><i class="bi bi-upc"></i> {{ $comp->serial_unico }}</small>
                                 <br><small class="text-muted"><i class="bi bi-calendar3"></i> Instalado: {{ $comp->pivot->fecha_instalacion }}</small>
                             </div>
-                            <form action="{{ route('admin.equipos.remover-componente', [$equipo, $comp]) }}" method="POST" class="ms-2">
+                            <form action="{{ route('admin.equipos.remover-componente', [$equipo,$comp]) }}" method="POST" class="ms-2">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="btn btn-sm btn-outline-danger" 
                                     onclick="return confirm('¿Remover el componente {{ $comp->serial_unico }}?\n\nEste componente pasará a estado \"En Revisión\".')"

@@ -12,7 +12,7 @@
             {{-- DATOS BÁSICOS --}}
             <h5 class="fw-bold mb-3" style="color: #1a3b5d;"><i class="bi bi-info-circle me-2"></i>Datos Básicos</h5>
             <div class="row g-3 mb-4">
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label class="form-label fw-semibold">Sede *</label>
                     <select name="sede_id" class="form-select rounded-3" required>
                         <option value="">Seleccione sede</option>
@@ -22,7 +22,7 @@
                     </select>
                     @error('sede_id') <small class="text-danger">{{ $message }}</small> @enderror
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label class="form-label fw-semibold">Categoría *</label>
                     <select name="categoria_componente_id" class="form-select rounded-3" required>
                         <option value="">Seleccione categoría</option>
@@ -32,7 +32,15 @@
                     </select>
                     @error('categoria_componente_id') <small class="text-danger">{{ $message }}</small> @enderror
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Estatus *</label>
+                    <select name="estatus" class="form-select rounded-3" required>
+                        @foreach(['Disponible','Instalado','En Revisión','Desincorporado'] as $e)
+                            <option value="{{ $e }}" {{ old('estatus', 'Disponible')==$e ? 'selected' : '' }}>{{ $e }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-3">
                     <label class="form-label fw-semibold">Serial Único *</label>
                     <input type="text" name="serial_unico" class="form-control rounded-3" value="{{ old('serial_unico') }}" required>
                     @error('serial_unico') <small class="text-danger">{{ $message }}</small> @enderror
@@ -46,6 +54,20 @@
                     <label class="form-label fw-semibold">Modelo *</label>
                     <input type="text" name="modelo" class="form-control rounded-3" value="{{ old('modelo') }}" required>
                     @error('modelo') <small class="text-danger">{{ $message }}</small> @enderror
+                </div>
+            </div>
+
+            {{-- VALORACIÓN --}}
+            <h5 class="fw-bold mb-3" style="color: #1a3b5d;"><i class="bi bi-cash-coin me-2"></i>Valoración</h5>
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Valor Prudencial (Bs.)</label>
+                    <input type="number" step="0.01" min="0" name="valor_prudencial" class="form-control rounded-3" value="{{ old('valor_prudencial') }}" placeholder="Ej: 3500.00">
+                    <small class="text-muted">Al menos uno de los dos valores es obligatorio</small>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Valor de Adquisición (Bs.)</label>
+                    <input type="number" step="0.01" min="0" name="valor_adquisicion" class="form-control rounded-3" value="{{ old('valor_adquisicion') }}">
                 </div>
             </div>
 

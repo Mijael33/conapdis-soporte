@@ -44,12 +44,16 @@ class VehiculosExport implements FromCollection, WithHeadings, WithMapping, Shou
             'Año',
             'Color',
             'Serial Motor',
-            'Serial Chasis',
+            'Serial Carrocería',
             'Kilometraje',
             'Estado',
             'Sede',
             'Estatus',
             'Usuario Asignado',
+            'Cédula',
+            'Cargo',
+            'Valor Prudencial (Bs.)',
+            'Valor Adquisición (Bs.)',
         ];
     }
 
@@ -64,12 +68,16 @@ class VehiculosExport implements FromCollection, WithHeadings, WithMapping, Shou
             $vehiculo->anio,
             $vehiculo->color,
             $vehiculo->serial_motor,
-            $vehiculo->serial_chasis,
+            $vehiculo->serial_carroceria,
             $vehiculo->kilometraje,
             $vehiculo->sede ? $vehiculo->sede->estado->nombre : 'N/A',
             $vehiculo->sede ? $vehiculo->sede->nombre_sede : 'N/A',
             $vehiculo->estatus,
             $vehiculo->usuario_asignado_nombre,
+            $vehiculo->usuario_asignado_cedula,
+            $vehiculo->usuario_asignado_cargo,
+            $vehiculo->valor_prudencial,
+            $vehiculo->valor_adquisicion,
         ];
     }
 }

@@ -25,7 +25,7 @@
                 <tr><th>Año</th><td>{{ $vehiculo->anio ?? 'N/A' }}</td></tr>
                 <tr><th>Color</th><td>{{ $vehiculo->color ?? 'N/A' }}</td></tr>
                 <tr><th>Serial Motor</th><td>{{ $vehiculo->serial_motor ?? 'N/A' }}</td></tr>
-                <tr><th>Serial Chasis</th><td>{{ $vehiculo->serial_chasis ?? 'N/A' }}</td></tr>
+                <tr><th>Serial Carrocería</th><td>{{ $vehiculo->serial_carroceria ?? 'N/A' }}</td></tr>
                 <tr><th>Kilometraje</th><td>{{ number_format($vehiculo->kilometraje, 0, ',', '.') }} km</td></tr>
                 <tr><th>Sede</th><td>{{ $vehiculo->sede ? $vehiculo->sede->nombre_sede . ' (' . $vehiculo->sede->estado->nombre . ')' : 'N/A' }}</td></tr>
                 <tr><th>Estatus</th><td>
@@ -34,6 +34,8 @@
                     @elseif($vehiculo->estatus=='En Mantenimiento')<span class="badge badge-revision">En Mantenimiento</span>
                     @else<span class="badge badge-inoperativo">Desincorporado</span>@endif
                 </td></tr>
+                <tr><th>Valor Prudencial</th><td>{{ $vehiculo->valor_prudencial ? number_format($vehiculo->valor_prudencial, 2, ',', '.') . ' Bs.' : 'N/A' }}</td></tr>
+                <tr><th>Valor Adquisición</th><td>{{ $vehiculo->valor_adquisicion ? number_format($vehiculo->valor_adquisicion, 2, ',', '.') . ' Bs.' : 'N/A' }}</td></tr>
                 <tr><th>Usuario Asignado</th><td>{{ $vehiculo->usuario_asignado_nombre ?? 'N/A' }}</td></tr>
                 <tr><th>Cédula</th><td>{{ $vehiculo->usuario_asignado_cedula ?? 'N/A' }}</td></tr>
                 <tr><th>Cargo</th><td>{{ $vehiculo->usuario_asignado_cargo ?? 'N/A' }}</td></tr>

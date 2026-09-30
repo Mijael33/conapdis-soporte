@@ -110,11 +110,27 @@
             </a>
             @endcan
 
+            {{-- VALORIZACIÓN --}}
+            @can('valorizacion.ver')
+            <div class="nav-section-title">Valorización</div>
+            <a href="{{ route('admin.valorizacion.index') }}" class="nav-link {{ request()->routeIs('admin.valorizacion.*') ? 'active' : '' }}">
+                <i class="bi bi-cash-coin"></i> Valorización de Inventario
+            </a>
+            @endcan
+
             {{-- BITÁCORA --}}
             @can('bitacora.ver')
             <div class="nav-section-title">Auditoría</div>
             <a href="{{ route('admin.bitacora.index') }}" class="nav-link {{ request()->routeIs('admin.bitacora.*') ? 'active' : '' }}">
                 <i class="bi bi-journal-text"></i> Bitácora
+            </a>
+            @endcan
+
+            {{-- CATÁLOGOS BASE --}}
+            @can('estados.ver')
+            <div class="nav-section-title">Catálogos Base</div>
+            <a href="{{ route('admin.estados.index') }}" class="nav-link {{ request()->routeIs('admin.estados.*') ? 'active' : '' }}">
+                <i class="bi bi-geo-alt"></i> Estados y Sedes
             </a>
             @endcan
 

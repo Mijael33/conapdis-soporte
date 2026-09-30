@@ -32,14 +32,14 @@
             background: #001e5c;
             color: white;
             padding: 6px 6px;
-            font-size: 7pt;
+            font-size: 6.5pt;
             text-align: left;
             text-transform: uppercase;
         }
         .sonido-table td {
             padding: 5px 6px;
             border: 1px solid #e2e8f0;
-            font-size: 7pt;
+            font-size: 6.5pt;
         }
         .sonido-table tr:nth-child(even) { background: #f8fafc; }
 
@@ -77,6 +77,8 @@
                 <th>Estado</th>
                 <th>Sede</th>
                 <th>Estatus</th>
+                <th>Val. Prud.</th>
+                <th>Val. Adq.</th>
             </tr>
         </thead>
         <tbody>
@@ -91,10 +93,12 @@
                 <td>{{ $e->sede->estado->nombre ?? 'N/A' }}</td>
                 <td>{{ $e->sede->nombre_sede ?? 'N/A' }}</td>
                 <td>{{ $e->estatus }}</td>
+                <td>{{ $e->valor_prudencial ? number_format($e->valor_prudencial, 2, ',', '.') : '-' }}</td>
+                <td>{{ $e->valor_adquisicion ? number_format($e->valor_adquisicion, 2, ',', '.') : '-' }}</td>
             </tr>
             @empty
             <tr>
-                <td colspan="9" style="text-align: center; color: #94a3b8; padding: 15px;">No hay equipos de sonido registrados</td>
+                <td colspan="11" style="text-align: center; color: #94a3b8; padding: 15px;">No hay equipos de sonido registrados</td>
             </tr>
             @endforelse
         </tbody>

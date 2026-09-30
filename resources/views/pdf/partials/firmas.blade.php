@@ -3,9 +3,8 @@
 | BLOQUE DE FIRMAS HOLÓGRAFAS DINÁMICO
 |--------------------------------------------------------------------------
 | Detecta cuántas firmas hay y ajusta el ancho automáticamente.
-| - 1 firma → ocupa el centro (33% de ancho centrado)
-| - 2 firmas → 50% cada una
-| - 3 firmas → 33% cada una
+| Reserva el mismo espacio para la cédula aunque no exista, para
+| que todas las firmas queden perfectamente alineadas.
 --}}
 
 @php
@@ -38,20 +37,11 @@
 
     $totalFirmas = count($firmas);
     $anchoColumna = $totalFirmas > 0 ? floor(100 / $totalFirmas) : 100;
-
-    // Si hay menos de 3 firmas, calculamos el margen para centrar
-    if ($totalFirmas === 1) {
-        $paddingIzq = 33;
-    } elseif ($totalFirmas === 2) {
-        $paddingIzq = 0;
-    } else {
-        $paddingIzq = 0;
-    }
 @endphp
 
 @if($totalFirmas > 0)
 <div style="page-break-inside: avoid; margin-top: 50px;">
-    <table style="width: 100%; border-collapse: collapse;">
+    <table style="width: 100%; border-collapse: collapse; table-layout: fixed;">
         <tr>
             {{-- Padding izquierdo para centrar cuando hay 1 firma --}}
             @if($totalFirmas === 1)
@@ -59,20 +49,36 @@
             @endif
 
             @foreach($firmas as $firma)
-            <td style="width: {{ $anchoColumna }}%; text-align: center; padding: 0 15px; vertical-align: bottom;">
-                <div style="height: 70px;"></div>
-                <div style="border-top: 1px solid #1e293b; padding-top: 6px;">
-                    @if(!empty($firma['nombre']))
-                        <div style="font-weight: 600; font-size: 9pt; color: #1e293b;">{{ $firma['nombre'] }}</div>
-                    @else
-                        <div style="font-weight: 600; font-size: 9pt; color: #94a3b8;">_____________________</div>
-                    @endif
-                    <div style="font-size: 8pt; color: #64748b; text-transform: uppercase; margin-top: 2px;">
+            <td style="width: {{ $anchoColumna }}%; text-align: center; padding: 0 10px; vertical-align: top;">
+                {{-- Espacio en blanco para la firma --}}
+                <div style="height: 60px;"></div>
+
+                {{-- Línea de firma --}}
+                <div style="border-top: 1px solid #1e293b; padding-top: 6px; margin-top: 0;">
+
+                    {{-- NOMBRE (siempre ocupa 1 línea) --}}
+                    <div style="font-weight: 600; font-size: 8.5pt; color: #1e293b; line-height: 1.2; height: 12px;">
+                        @if(!empty($firma['nombre']))
+                            {{ $firma['nombre'] }}
+                        @else
+                            &nbsp;
+                        @endif
+                    </div>
+
+                    {{-- CARGO (siempre ocupa 1 línea) --}}
+                    <div style="font-size: 7pt; color: #64748b; text-transform: uppercase; line-height: 1.2; height: 10px; margin-top: 3px;">
                         {{ $firma['cargo'] }}
                     </div>
-                    @if(!empty($firma['cedula']))
-                        <div style="font-size: 8pt; color: #1e293b; margin-top: 2px;">C.I.: {{ $firma['cedula'] }}</div>
-                    @endif
+
+                    {{-- CÉDULA (siempre reserva espacio aunque esté vacía) --}}
+                    <div style="font-size: 7.5pt; color: #1e293b; line-height: 1.2; height: 10px; margin-top: 3px;">
+                        @if(!empty($firma['cedula']))
+                            C.I.: {{ $firma['cedula'] }}
+                        @else
+                            &nbsp;
+                        @endif
+                    </div>
+
                 </div>
             </td>
             @endforeach

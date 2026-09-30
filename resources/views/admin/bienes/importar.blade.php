@@ -7,21 +7,31 @@
     <div class="card-body">
         <div class="alert alert-info">
             <h6 class="fw-bold"><i class="bi bi-info-circle me-2"></i>Formato del Excel</h6>
-            <table class="table table-sm table-bordered mt-2">
-                <thead class="table-header"><tr><th>Columna</th><th>Descripción</th><th>Obligatorio</th></tr></thead>
-                <tbody>
-                    <tr><td><code>codigo_inventario</code></td><td>Código único</td><td>✅</td></tr>
-                    <tr><td><code>categoria</code></td><td>Nombre de categoría existente</td><td>✅</td></tr>
-                    <tr><td><code>sede</code></td><td>Nombre de sede existente</td><td>✅</td></tr>
-                    <tr><td><code>descripcion</code></td><td>Descripción del bien</td><td>✅</td></tr>
-                    <tr><td><code>marca</code>, <code>modelo</code>, <code>serial</code></td><td>Datos opcionales</td><td>❌</td></tr>
-                    <tr><td><code>color</code>, <code>material</code></td><td>Características</td><td>❌</td></tr>
-                    <tr><td><code>estatus</code></td><td>Disponible/Asignado/etc</td><td>❌</td></tr>
-                    <tr><td><code>usuario_asignado</code>, <code>cedula_asignado</code>, <code>cargo_asignado</code></td><td>Datos asignación</td><td>❌</td></tr>
-                    <tr><td><code>valor_adquisicion</code>, <code>fecha_adquisicion</code></td><td>Datos económicos</td><td>❌</td></tr>
-                </tbody>
-            </table>
-            <a href="{{ route('admin.bienes.plantilla') }}" class="btn btn-sm btn-outline-conapdis"><i class="bi bi-download"></i> Descargar Plantilla</a>
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered mt-2">
+                    <thead class="table-header"><tr><th>Columna</th><th>Descripción</th><th>Obligatorio</th></tr></thead>
+                    <tbody>
+                        <tr><td><code>codigo_inventario</code></td><td>Código único</td><td>✅</td></tr>
+                        <tr><td><code>categoria</code></td><td>Nombre de categoría (debe existir o se crea automáticamente)</td><td>✅</td></tr>
+                        <tr><td><code>sede</code></td><td>Nombre de sede (debe existir o se crea automáticamente)</td><td>✅</td></tr>
+                        <tr><td><code>descripcion</code></td><td>Descripción del bien</td><td>✅</td></tr>
+                        <tr><td><code>marca</code></td><td>Marca del bien</td><td>❌</td></tr>
+                        <tr><td><code>modelo</code></td><td>Modelo del bien</td><td>❌</td></tr>
+                        <tr><td><code>serial</code></td><td>Número de serial</td><td>❌</td></tr>
+                        <tr><td><code>color</code></td><td>Color predominante</td><td>❌</td></tr>
+                        <tr><td><code>material</code></td><td>Material de fabricación</td><td>❌</td></tr>
+                        <tr><td><code>estatus</code></td><td>Disponible, Asignado, En Mantenimiento, Desincorporado (por defecto: Disponible)</td><td>❌</td></tr>
+                        <tr><td><code>usuario_asignado</code></td><td>Nombre del usuario asignado</td><td>❌</td></tr>
+                        <tr><td><code>cedula_asignado</code></td><td>Cédula del usuario asignado</td><td>❌</td></tr>
+                        <tr><td><code>cargo_asignado</code></td><td>Cargo del usuario asignado</td><td>❌</td></tr>
+                        <tr><td><code>valor_prudencial</code></td><td>Valor prudencial del bien (al menos 1 valor obligatorio)</td><td>❌</td></tr>
+                        <tr><td><code>valor_adquisicion</code></td><td>Valor de adquisición (al menos 1 valor obligatorio)</td><td>❌</td></tr>
+                        <tr><td><code>fecha_adquisicion</code></td><td>Fecha de adquisición (AAAA-MM-DD)</td><td>❌</td></tr>
+                        <tr><td><code>observaciones</code></td><td>Notas u observaciones adicionales</td><td>❌</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <a href="{{ route('admin.bienes.plantilla') }}" class="btn btn-sm btn-outline-conapdis mt-2"><i class="bi bi-download"></i> Descargar Plantilla</a>
         </div>
         <form action="{{ route('admin.bienes.procesar-importacion') }}" method="POST" enctype="multipart/form-data">
             @csrf
@@ -29,8 +39,8 @@
                 <label class="form-label fw-semibold">Archivo Excel</label>
                 <input type="file" name="archivo" class="form-control" accept=".xlsx,.xls,.csv" required>
             </div>
-            <button type="submit" class="btn-conapdis"><i class="bi bi-upload"></i> Importar</button>
-            <a href="{{ route('admin.bienes.index') }}" class="btn-outline-conapdis">Cancelar</a>
+            <button type="submit" class="btn btn-conapdis"><i class="bi bi-upload"></i> Importar</button>
+            <a href="{{ route('admin.bienes.index') }}" class="btn btn-outline-conapdis">Cancelar</a>
         </form>
     </div>
 </div>

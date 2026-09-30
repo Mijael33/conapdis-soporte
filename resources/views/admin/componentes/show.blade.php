@@ -28,6 +28,8 @@
                         @elseif($componente->estatus=='En Revisión')<span class="badge badge-revision">En Revisión</span>
                         @else<span class="badge badge-inoperativo">Desincorporado</span>@endif
                     </td></tr>
+                    <tr><th>Valor Prudencial</th><td>{{ $componente->valor_prudencial ? number_format($componente->valor_prudencial, 2, ',', '.') . ' Bs.' : 'N/A' }}</td></tr>
+                    <tr><th>Valor Adquisición</th><td>{{ $componente->valor_adquisicion ? number_format($componente->valor_adquisicion, 2, ',', '.') . ' Bs.' : 'N/A' }}</td></tr>
                     <tr><th>Observaciones</th><td>{{ $componente->observaciones ?? 'N/A' }}</td></tr>
                     @if($componente->estatus == 'Instalado' && $componente->equipoActual->isNotEmpty())
                     <tr>
@@ -37,7 +39,7 @@
                                 <a href="{{ route('admin.equipos.show', $equipo) }}" class="btn btn-sm btn-outline-conapdis">
                                     <i class="bi bi-pc-display"></i> {{ $equipo->codigo_inventario_institucional }}
                                 </a>
-                                <br><small class="text-muted">{{ $equipo->departamento->sede->nombre_sede }} | Instalado: {{ $equipo->pivot->fecha_instalacion }}</small>
+                                <br><small class="text-muted">{{ $equipo->sede->nombre_sede ?? 'N/A' }} | Instalado: {{ $equipo->pivot->fecha_instalacion }}</small>
                             @endforeach
                         </td>
                     </tr>
@@ -84,7 +86,7 @@
                         <a href="{{ route('admin.equipos.show', $equipo) }}" class="fw-semibold text-decoration-none">
                             {{ $equipo->codigo_inventario_institucional }}
                         </a>
-                        <br><small>{{ $equipo->departamento->sede->nombre_sede ?? 'N/A' }}</small>
+                        <br><small>{{ $equipo->sede->nombre_sede ?? 'N/A' }}</small>
                         <br><small class="text-muted">Instalado: {{ $equipo->pivot->fecha_instalacion }}</small>
                         @if($equipo->pivot->fecha_desinstalacion)
                             <br><small class="text-danger">Removido: {{ $equipo->pivot->fecha_desinstalacion }}</small>

@@ -72,13 +72,9 @@
         </tr>
         <tr>
             <td class="label">Estado</td>
-            <td>{{ $ordene->equipo->departamento->sede->estado->nombre }}</td>
+            <td>{{ $ordene->equipo->sede->estado->nombre ?? 'N/A' }}</td>
             <td class="label">Sede</td>
-            <td>{{ $ordene->equipo->departamento->sede->nombre_sede }}</td>
-        </tr>
-        <tr>
-            <td class="label">Departamento</td>
-            <td colspan="3">{{ $ordene->equipo->departamento->nombre_departamento }}</td>
+            <td>{{ $ordene->equipo->sede->nombre_sede ?? 'N/A' }}</td>
         </tr>
     </table>
 

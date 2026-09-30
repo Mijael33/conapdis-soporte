@@ -35,6 +35,7 @@
                 <tr><th>Usuario Asignado</th><td>{{ $bien->usuario_asignado_nombre ?? 'N/A' }}</td></tr>
                 <tr><th>Cédula</th><td>{{ $bien->usuario_asignado_cedula ?? 'N/A' }}</td></tr>
                 <tr><th>Cargo</th><td>{{ $bien->usuario_asignado_cargo ?? 'N/A' }}</td></tr>
+                <tr><th>Valor Prudencial</th><td>{{ $bien->valor_prudencial ? number_format($bien->valor_prudencial, 2, ',', '.') . ' Bs.' : 'N/A' }}</td></tr>
                 <tr><th>Valor Adquisición</th><td>{{ $bien->valor_adquisicion ? number_format($bien->valor_adquisicion, 2, ',', '.') . ' Bs.' : 'N/A' }}</td></tr>
                 <tr><th>Fecha Adquisición</th><td>{{ $bien->fecha_adquisicion ? $bien->fecha_adquisicion->format('d/m/Y') : 'N/A' }}</td></tr>
                 <tr><th>Observaciones</th><td>{{ $bien->observaciones ?? 'N/A' }}</td></tr>

@@ -7,13 +7,11 @@
         * { font-family: 'DejaVu Sans', sans-serif; }
         body { font-size: 9pt; color: #1e293b; margin: 0; padding: 15px; }
 
-        /* TABLAS */
         table { width: 100%; border-collapse: collapse; }
         .datos-table { margin-bottom: 12px; }
         .datos-table td { padding: 5px 8px; border: 1px solid #e2e8f0; font-size: 9pt; vertical-align: top; }
         .datos-table td.label { background: #f8fafc; font-weight: 600; color: #001e5c; width: 25%; }
 
-        /* SECCIONES */
         .section-title {
             background: #001e5c;
             color: white;
@@ -26,7 +24,6 @@
             margin-top: 12px;
         }
 
-        /* TABLA DE COMPONENTES */
         .componentes-table th {
             background: #003097;
             color: white;
@@ -42,7 +39,6 @@
         }
         .componentes-table tr:nth-child(even) { background: #f8fafc; }
 
-        /* BADGES */
         .badge {
             display: inline-block;
             padding: 3px 8px;
@@ -54,7 +50,6 @@
         .badge-mantenimiento { background: #fefce8; color: #a16207; }
         .badge-inoperativo { background: #fef2f2; color: #ef172f; }
 
-        /* PIE */
         .pie {
             margin-top: 20px;
             padding-top: 10px;
@@ -67,10 +62,8 @@
 </head>
 <body>
 
-    {{-- ENCABEZADO INSTITUCIONAL --}}
     @include('pdf.partials.encabezado')
 
-    {{-- TÍTULO DEL DOCUMENTO --}}
     <div style="text-align: center; font-size: 12pt; font-weight: 700; color: #001e5c; text-transform: uppercase; padding: 10px; background: #f4f6f9; border-top: 2px solid #003097; border-bottom: 2px solid #003097; margin: 15px 0;">
         Ficha Técnica de Equipo
     </div>
@@ -86,19 +79,15 @@
         </tr>
         <tr>
             <td class="label">Tipo</td>
-            <td>{{ $equipo->tipoEquipo->nombre }}</td>
+            <td>{{ $equipo->tipoEquipo->nombre ?? 'N/A' }}</td>
             <td class="label">Marca / Modelo</td>
             <td>{{ $equipo->marca }} {{ $equipo->modelo }}</td>
         </tr>
         <tr>
             <td class="label">Estado</td>
-            <td>{{ $equipo->departamento->sede->estado->nombre }}</td>
+            <td>{{ $equipo->sede->estado->nombre ?? 'N/A' }}</td>
             <td class="label">Sede</td>
-            <td>{{ $equipo->departamento->sede->nombre_sede }}</td>
-        </tr>
-        <tr>
-            <td class="label">Departamento</td>
-            <td colspan="3">{{ $equipo->departamento->nombre_departamento }}</td>
+            <td>{{ $equipo->sede->nombre_sede ?? 'N/A' }}</td>
         </tr>
         <tr>
             <td class="label">Estatus General</td>
@@ -111,6 +100,17 @@
                     <span class="badge badge-inoperativo">✗ {{ $equipo->estatus_general }}</span>
                 @endif
             </td>
+        </tr>
+    </table>
+
+    {{-- VALORACIÓN --}}
+    <div class="section-title">Valoración</div>
+    <table class="datos-table">
+        <tr>
+            <td class="label">Valor Prudencial</td>
+            <td>{{ $equipo->valor_prudencial ? number_format($equipo->valor_prudencial, 2, ',', '.') . ' Bs.' : 'N/A' }}</td>
+            <td class="label">Valor Adquisición</td>
+            <td>{{ $equipo->valor_adquisicion ? number_format($equipo->valor_adquisicion, 2, ',', '.') . ' Bs.' : 'N/A' }}</td>
         </tr>
     </table>
 
@@ -210,7 +210,6 @@
     </table>
     @endif
 
-    {{-- FIRMAS --}}
     @include('pdf.partials.firmas', [
         'firma1_nombre' => 'Técnico Evaluador',
         'firma1_cargo' => 'Firma del Técnico',
@@ -222,7 +221,6 @@
         'firma3_cargo' => '',
     ])
 
-    {{-- PIE DE PÁGINA --}}
     <div class="pie">
         Documento generado automáticamente por el Sistema de Gestión de Bienes CONAPDIS<br>
         Fecha de emisión: {{ date('d/m/Y H:i:s') }}

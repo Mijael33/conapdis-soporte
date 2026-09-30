@@ -3,103 +3,64 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\BitacoraEquipo;
-use App\Models\BitacoraAccesoContrasena;
-use App\Models\Sede;
+use App\Models\BitacoraGlobal;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class BitacoraController extends Controller
 {
     /**
-     * Listado de bitácora combinada (equipos + accesos a contraseñas).
-     * Admin ve todo. Otros solo ven lo de su sede/estado.
+     * Listado de bitácora con filtros.
      */
     public function index(Request $request)
     {
         $user = auth()->user();
         $esAdmin = $user->hasRole('Administrador');
         $esAuditor = $user->hasRole('Auditor');
-        $sedeId = session('filtro_sede_id');
-        $estadoId = session('filtro_estado_id');
 
-        // Bitácora de equipos
-        $queryEquipos = BitacoraEquipo::with(['equipo.departamento.sede.estado', 'usuario']);
+        $query = BitacoraGlobal::with('usuario')->orderBy('fecha_registro', 'desc');
 
-        if (!$esAdmin && !$esAuditor) {
-            $queryEquipos->whereHas('equipo.departamento.sede', function ($q) use ($user) {
-                $q->where('id', $user->sede_id);
-            });
-        } elseif ($sedeId) {
-            $queryEquipos->whereHas('equipo.departamento.sede', function ($q) use ($sedeId) {
-                $q->where('id', $sedeId);
-            });
-        } elseif ($estadoId) {
-            $queryEquipos->whereHas('equipo.departamento.sede', function ($q) use ($estadoId) {
-                $q->where('estado_id', $estadoId);
-            });
+        // Filtros
+        if ($request->modulo) {
+            $query->where('modulo', $request->modulo);
         }
-
-        // Bitácora de accesos a contraseñas
-        $queryAccesos = BitacoraAccesoContrasena::with(['sistemaOperativo.equipo.departamento.sede.estado', 'usuario']);
-
-        if (!$esAdmin && !$esAuditor) {
-            $queryAccesos->whereHas('sistemaOperativo.equipo.departamento.sede', function ($q) use ($user) {
-                $q->where('id', $user->sede_id);
-            });
-        } elseif ($sedeId) {
-            $queryAccesos->whereHas('sistemaOperativo.equipo.departamento.sede', function ($q) use ($sedeId) {
-                $q->where('id', $sedeId);
-            });
-        } elseif ($estadoId) {
-            $queryAccesos->whereHas('sistemaOperativo.equipo.departamento.sede', function ($q) use ($estadoId) {
-                $q->where('estado_id', $estadoId);
-            });
+        if ($request->accion) {
+            $query->where('accion', $request->accion);
         }
-
-        // Filtros adicionales
+        if ($request->usuario_id) {
+            $query->where('usuario_id', $request->usuario_id);
+        }
         if ($request->fecha_desde) {
-            $queryEquipos->whereDate('fecha_registro', '>=', $request->fecha_desde);
-            $queryAccesos->whereDate('fecha_acceso', '>=', $request->fecha_desde);
+            $query->whereDate('fecha_registro', '>=', $request->fecha_desde);
         }
         if ($request->fecha_hasta) {
-            $queryEquipos->whereDate('fecha_registro', '<=', $request->fecha_hasta);
-            $queryAccesos->whereDate('fecha_acceso', '<=', $request->fecha_hasta);
+            $query->whereDate('fecha_registro', '<=', $request->fecha_hasta);
+        }
+        if ($request->search) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('descripcion', 'ILIKE', "%{$search}%")
+                  ->orWhere('modelo_codigo', 'ILIKE', "%{$search}%")
+                  ->orWhere('usuario_nombre_snapshot', 'ILIKE', "%{$search}%");
+            });
         }
 
-        // Combinar resultados y ordenar por fecha
-        $equipos = $queryEquipos->get()->map(function ($item) {
-            $item->tipo = 'equipo';
-            $item->fecha_orden = $item->fecha_registro;
-            return $item;
-        });
+        $bitacoras = $query->paginate(25);
 
-        $accesos = $queryAccesos->get()->map(function ($item) {
-            $item->tipo = 'contrasena';
-            $item->fecha_orden = $item->fecha_acceso;
-            return $item;
-        });
+        // Opciones para filtros
+        $modulos = BitacoraGlobal::select('modulo')->distinct()->orderBy('modulo')->pluck('modulo');
+        $acciones = BitacoraGlobal::select('accion')->distinct()->orderBy('accion')->pluck('accion');
+        $usuarios = User::orderBy('name')->get();
 
-        $bitacoras = $equipos->concat($accesos)->sortByDesc('fecha_orden')->values();
-
-        // Paginación manual
-        $page = request()->get('page', 1);
-        $perPage = 20;
-        $total = $bitacoras->count();
-        $bitacoras = $bitacoras->forPage($page, $perPage);
-        $bitacoras = new \Illuminate\Pagination\LengthAwarePaginator(
-            $bitacoras,
-            $total,
-            $perPage,
-            $page,
-            ['path' => request()->url(), 'query' => request()->query()]
-        );
-
-        return view('admin.bitacora.index', compact('bitacoras'));
+        return view('admin.bitacora.index', compact('bitacoras', 'modulos', 'acciones', 'usuarios'));
     }
 
+    /**
+     * Detalle de un registro de bitácora.
+     */
     public function show($id)
     {
-        $bitacora = BitacoraEquipo::with(['equipo', 'usuario'])->findOrFail($id);
+        $bitacora = BitacoraGlobal::with('usuario')->findOrFail($id);
         return view('admin.bitacora.show', compact('bitacora'));
     }
 }

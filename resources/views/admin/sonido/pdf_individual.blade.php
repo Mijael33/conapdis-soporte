@@ -68,6 +68,16 @@
         </tr>
     </table>
 
+    <div class="section-title">Valoración</div>
+    <table class="datos-table">
+        <tr>
+            <td class="label">Valor Prudencial</td>
+            <td>{{ $equipo->valor_prudencial ? number_format($equipo->valor_prudencial, 2, ',', '.') . ' Bs.' : 'N/A' }}</td>
+            <td class="label">Valor Adquisición</td>
+            <td>{{ $equipo->valor_adquisicion ? number_format($equipo->valor_adquisicion, 2, ',', '.') . ' Bs.' : 'N/A' }}</td>
+        </tr>
+    </table>
+
     @if($equipo->usuario_asignado_nombre)
     <div class="section-title">Usuario Asignado</div>
     <table class="datos-table">

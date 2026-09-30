@@ -52,17 +52,17 @@
 <h2 class="mb-4" style="color: #1a3b5d; font-weight: 700;">Panel de Control</h2>
 
 {{-- ============================================================
-     RESUMEN GENERAL (KPIs PRINCIPALES)
+     RESUMEN GENERAL
      ============================================================ --}}
 <div class="row g-3 mb-4">
     @php
     $resumenGeneral = [
-        ['label' => 'Total Bienes', 'total' => $totalEquipos + $totalComponentes + $totalBienes + $totalVehiculos + $totalSonido, 'color' => '#003097', 'bg' => '#dbeafe', 'icon' => '<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line>'],
+        ['label' => 'Total Bienes', 'total' => $totalEquipos + $totalComponentes + $totalBienes + $totalVehiculos + $totalSonido, 'color' => '#003097', 'bg' => '#dbeafe', 'icon' => '<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>'],
         ['label' => 'Operativos', 'total' => $equiposOperativos + $componentesInstalados + $bienesDisponibles + $vehiculosDisponibles + $sonidoDisponible, 'color' => '#16a34a', 'bg' => '#dcfce7', 'icon' => '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline>'],
         ['label' => 'En Mantenimiento', 'total' => $equiposMantenimiento + $componentesRevision, 'color' => '#d97706', 'bg' => '#fef3c7', 'icon' => '<circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>'],
-        ['label' => 'Órdenes Abiertas', 'total' => $ordenesAbiertas, 'color' => '#dc2626', 'bg' => '#fee2e2', 'icon' => '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line>'],
-        ['label' => 'Movimientos Totales', 'total' => $totalSalidas + $totalEntradas, 'color' => '#7c3aed', 'bg' => '#ede9fe', 'icon' => '<polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path>'],
-        ['label' => 'Usuarios del Sistema', 'total' => $totalUsuarios, 'color' => '#4f46e5', 'bg' => '#e0e7ff', 'icon' => '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path>'],
+        ['label' => 'Órdenes Abiertas', 'total' => $ordenesAbiertas, 'color' => '#dc2626', 'bg' => '#fee2e2', 'icon' => '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>'],
+        ['label' => 'Movimientos Totales', 'total' => $totalSalidas, 'color' => '#7c3aed', 'bg' => '#ede9fe', 'icon' => '<polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path>'],
+        ['label' => 'Usuarios del Sistema', 'total' => $totalUsuarios, 'color' => '#4f46e5', 'bg' => '#e0e7ff', 'icon' => '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle>'],
     ];
     @endphp
 
@@ -96,7 +96,7 @@
                 </svg>
             </div>
             <div>
-                <h5 class="mb-0 fw-bold" style="color: #1a3b5d;">Tecnología</h4>
+                <h5 class="mb-0 fw-bold" style="color: #1a3b5d;">Tecnología</h5>
                 <small class="text-muted">Equipos, Componentes y Órdenes de Servicio</small>
             </div>
         </div>
@@ -146,7 +146,7 @@
                 </svg>
             </div>
             <div>
-                <h5 class="mb-0 fw-bold" style="color: #1a3b5d;">Bienes Nacionales</h4>
+                <h5 class="mb-0 fw-bold" style="color: #1a3b5d;">Bienes Nacionales</h5>
                 <small class="text-muted">Escritorios, Sillas, Mesas y Otros</small>
             </div>
         </div>
@@ -176,7 +176,7 @@
             <div class="col-xl-3 col-md-6">
                 <div class="kpi-card" style="border-top-color: #003097;">
                     <div class="kpi-card-title">Categorías</div>
-                    <div class="kpi-card-value">{{ \App\Models\CategoriaBien::count() }}</div>
+                    <div class="kpi-card-value">{{ $totalCategoriasBienes }}</div>
                     <small class="text-muted">tipos de bienes</small>
                 </div>
             </div>
@@ -199,7 +199,7 @@
                 </svg>
             </div>
             <div>
-                <h5 class="mb-0 fw-bold" style="color: #1a3b5d;">Vehículos</h4>
+                <h5 class="mb-0 fw-bold" style="color: #1a3b5d;">Vehículos</h5>
                 <small class="text-muted">Flota Vehicular Institucional</small>
             </div>
         </div>
@@ -229,7 +229,7 @@
             <div class="col-xl-3 col-md-6">
                 <div class="kpi-card" style="border-top-color: #003097;">
                     <div class="kpi-card-title">Categorías</div>
-                    <div class="kpi-card-value">{{ \App\Models\CategoriaVehiculo::count() }}</div>
+                    <div class="kpi-card-value">{{ $totalCategoriasVehiculos }}</div>
                     <small class="text-muted">tipos de vehículos</small>
                 </div>
             </div>
@@ -250,7 +250,7 @@
                 </svg>
             </div>
             <div>
-                <h5 class="mb-0 fw-bold" style="color: #1a3b5d;">Equipos de Sonido</h4>
+                <h5 class="mb-0 fw-bold" style="color: #1a3b5d;">Equipos de Sonido</h5>
                 <small class="text-muted">Parlantes, Micrófonos, Consolas y Amplificadores</small>
             </div>
         </div>
@@ -280,7 +280,7 @@
             <div class="col-xl-3 col-md-6">
                 <div class="kpi-card" style="border-top-color: #003097;">
                     <div class="kpi-card-title">Categorías</div>
-                    <div class="kpi-card-value">{{ \App\Models\CategoriaSonido::count() }}</div>
+                    <div class="kpi-card-value">{{ $totalCategoriasSonido }}</div>
                     <small class="text-muted">tipos de equipos</small>
                 </div>
             </div>
@@ -303,7 +303,7 @@
                 </svg>
             </div>
             <div>
-                <h5 class="mb-0 fw-bold" style="color: #1a3b5d;">Entrada / Salida</h4>
+                <h5 class="mb-0 fw-bold" style="color: #1a3b5d;">Entrada / Salida</h5>
                 <small class="text-muted">Registro de Movimientos de Bienes</small>
             </div>
         </div>
@@ -311,30 +311,30 @@
         <div class="row g-3">
             <div class="col-xl-3 col-md-6">
                 <div class="kpi-card" style="border-top-color: #f59e0b;">
-                    <div class="kpi-card-title">Total Movimientos</div>
-                    <div class="kpi-card-value">{{ $totalSalidas + $totalEntradas }}</div>
+                    <div class="kpi-card-title">Movimientos Totales</div>
+                    <div class="kpi-card-value">{{ $totalSalidas }}</div>
                     <small class="text-muted">registrados en el sistema</small>
                 </div>
             </div>
             <div class="col-xl-3 col-md-6">
                 <div class="kpi-card" style="border-top-color: #dc2626;">
-                    <div class="kpi-card-title">Salidas</div>
-                    <div class="kpi-card-value">{{ $totalSalidas }}</div>
-                    <small class="text-muted">bienes que salieron</small>
+                    <div class="kpi-card-title">Salidas Pendientes</div>
+                    <div class="kpi-card-value">{{ $salidasPendientes }}</div>
+                    <small class="text-muted">bienes aún fuera de sede</small>
                 </div>
             </div>
             <div class="col-xl-3 col-md-6">
                 <div class="kpi-card operativo">
-                    <div class="kpi-card-title">Entradas</div>
+                    <div class="kpi-card-title">Entradas Completadas</div>
                     <div class="kpi-card-value">{{ $totalEntradas }}</div>
                     <small class="text-muted">bienes retornados</small>
                 </div>
             </div>
             <div class="col-xl-3 col-md-6">
                 <div class="kpi-card" style="border-top-color: #003097;">
-                    <div class="kpi-card-title">Pendientes de Retorno</div>
-                    <div class="kpi-card-value">{{ max(0, $totalSalidas - $totalEntradas) }}</div>
-                    <small class="text-muted">bienes fuera de sede</small>
+                    <div class="kpi-card-title">Bienes en Calle</div>
+                    <div class="kpi-card-value">{{ $salidasPendientes }}</div>
+                    <small class="text-muted">pendientes de retorno</small>
                 </div>
             </div>
         </div>
@@ -354,7 +354,7 @@
                 </svg>
             </div>
             <div>
-                <h5 class="mb-0 fw-bold" style="color: #1a3b5d;">Estructura y Usuarios</h4>
+                <h5 class="mb-0 fw-bold" style="color: #1a3b5d;">Estructura y Usuarios</h5>
                 <small class="text-muted">Organización Geográfica del Sistema</small>
             </div>
         </div>
@@ -384,7 +384,7 @@
             <div class="col-xl-3 col-md-6">
                 <div class="kpi-card" style="border-top-color: #003097;">
                     <div class="kpi-card-title">Roles</div>
-                    <div class="kpi-card-value">{{ \Spatie\Permission\Models\Role::count() }}</div>
+                    <div class="kpi-card-value">{{ $totalRoles }}</div>
                     <small class="text-muted">roles configurados</small>
                 </div>
             </div>
@@ -457,7 +457,7 @@ const statsData = [
     { label: 'Bienes', value: {{ $totalBienes }}, color: '#db2777' },
     { label: 'Vehículos', value: {{ $totalVehiculos }}, color: '#7c3aed' },
     { label: 'Sonido', value: {{ $totalSonido }}, color: '#0891b2' },
-    { label: 'Movimientos', value: {{ $totalSalidas + $totalEntradas }}, color: '#f59e0b' },
+    { label: 'Movimientos', value: {{ $totalSalidas }}, color: '#f59e0b' },
 ].sort((a, b) => b.value - a.value);
 
 const ctxBar = document.getElementById('graficoBarras').getContext('2d');

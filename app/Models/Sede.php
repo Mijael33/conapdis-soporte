@@ -33,10 +33,40 @@ class Sede extends Model
     }
 
     /**
-     * Departamentos que pertenecen a esta sede.
+     * Equipos asignados a esta sede.
      */
-    public function departamentos()
+    public function equipos()
     {
-        return $this->hasMany(Departamento::class);
+        return $this->hasMany(Equipo::class);
+    }
+
+    public function componentes()
+    {
+        return $this->hasMany(Componente::class);
+    }
+
+    public function bienes()
+    {
+        return $this->hasMany(BienNacional::class);
+    }
+
+    public function vehiculos()
+    {
+        return $this->hasMany(Vehiculo::class);
+    }
+
+    public function equiposSonido()
+    {
+        return $this->hasMany(EquipoSonido::class);
+    }
+
+    public function movimientos()
+    {
+        return $this->hasMany(RegistroEntradaSalida::class, 'sede_id');
+    }
+
+    public function usuarios()
+    {
+        return $this->hasMany(User::class);
     }
 }

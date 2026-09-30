@@ -20,12 +20,16 @@ class Componente extends Model
         'sede_id',
         'caracteristicas_tecnicas',
         'observaciones',
+        'valor_prudencial',
+        'valor_adquisicion',
     ];
 
     protected function casts(): array
     {
         return [
             'caracteristicas_tecnicas' => 'array',
+            'valor_prudencial' => 'decimal:2',
+            'valor_adquisicion' => 'decimal:2',
         ];
     }
 
@@ -34,6 +38,7 @@ class Componente extends Model
     | RELACIONES
     |--------------------------------------------------------------------------
     */
+
     public function categoria()
     {
         return $this->belongsTo(CategoriaComponente::class, 'categoria_componente_id');
@@ -59,9 +64,6 @@ class Componente extends Model
                     ->withTimestamps();
     }
 
-    /**
-     * Bitácora de cambios del componente (independiente del equipo).
-     */
     public function bitacoras()
     {
         return $this->hasMany(BitacoraComponente::class, 'componente_id');

@@ -56,8 +56,8 @@
         <tr>
             <td class="label">Serial Motor</td>
             <td>{{ $vehiculo->serial_motor ?? 'N/A' }}</td>
-            <td class="label">Serial Chasis</td>
-            <td>{{ $vehiculo->serial_chasis ?? 'N/A' }}</td>
+            <td class="label">Serial Carrocería</td>
+            <td>{{ $vehiculo->serial_carroceria ?? 'N/A' }}</td>
         </tr>
     </table>
 
@@ -95,6 +95,16 @@
         </tr>
     </table>
     @endif
+
+    <div class="section-title">Valoración</div>
+    <table class="datos-table">
+        <tr>
+            <td class="label">Valor Prudencial</td>
+            <td>{{ $vehiculo->valor_prudencial ? number_format($vehiculo->valor_prudencial, 2, ',', '.') . ' Bs.' : 'N/A' }}</td>
+            <td class="label">Valor Adquisición</td>
+            <td>{{ $vehiculo->valor_adquisicion ? number_format($vehiculo->valor_adquisicion, 2, ',', '.') . ' Bs.' : 'N/A' }}</td>
+        </tr>
+    </table>
 
     @if($vehiculo->observaciones)
     <div class="section-title">Observaciones</div>

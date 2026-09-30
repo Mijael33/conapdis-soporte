@@ -291,7 +291,7 @@
 
 
             {{-- ---------------------------------------------
-                 FILA 2
+                 FILA 2 (Serial y Sede vinculada correctamente)
             ---------------------------------------------- --}}
 
             <tr>
@@ -317,7 +317,7 @@
                 </td>
 
 
-                {{-- SEDE --}}
+                {{-- SEDE / UBICACIÓN VINCULADA --}}
 
                 <td>
 
@@ -329,7 +329,7 @@
 
                         <div class="campo-valor sede">
 
-                            {{ $equipo->departamento->sede->nombre_sede ?? 'N/A' }}
+                            {{ $equipo->sede->nombre_sede ?? 'N/A' }}
 
                         </div>
 

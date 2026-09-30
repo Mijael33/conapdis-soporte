@@ -19,7 +19,7 @@ class AdminUserSeeder extends Seeder
             ['email' => 'admin@conapdis.gob.ve'],
             [
                 'name' => 'Administrador CONAPDIS',
-                'password' => Hash::make('Conapdis2024!'),
+                'password' => Hash::make('Conapdis2026!'),
                 'email_verified_at' => now(),
                 'estado_id' => $dc->id,
                 'sede_id' => $sedeCentral->id,

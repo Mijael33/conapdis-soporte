@@ -76,6 +76,8 @@
                 <th>Sede</th>
                 <th>Estatus</th>
                 <th>Equipo Actual</th>
+                <th>Val. Prud.</th>
+                <th>Val. Adq.</th>
             </tr>
         </thead>
         <tbody>
@@ -89,10 +91,12 @@
                 <td>{{ $c->sede->nombre_sede ?? 'N/A' }}</td>
                 <td>{{ $c->estatus }}</td>
                 <td>{{ $c->equipoActual->first()->codigo_inventario_institucional ?? '-' }}</td>
+                <td>{{ $c->valor_prudencial ? number_format($c->valor_prudencial, 2, ',', '.') : '-' }}</td>
+                <td>{{ $c->valor_adquisicion ? number_format($c->valor_adquisicion, 2, ',', '.') : '-' }}</td>
             </tr>
             @empty
             <tr>
-                <td colspan="8" style="text-align: center; color: #94a3b8; padding: 15px;">No hay componentes registrados</td>
+                <td colspan="10" style="text-align: center; color: #94a3b8; padding: 15px;">No hay componentes registrados</td>
             </tr>
             @endforelse
         </tbody>

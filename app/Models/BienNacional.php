@@ -25,6 +25,7 @@ class BienNacional extends Model
         'usuario_asignado_nombre',
         'usuario_asignado_cedula',
         'usuario_asignado_cargo',
+        'valor_prudencial',
         'valor_adquisicion',
         'fecha_adquisicion',
         'observaciones',
@@ -33,10 +34,17 @@ class BienNacional extends Model
     protected function casts(): array
     {
         return [
+            'valor_prudencial' => 'decimal:2',
             'valor_adquisicion' => 'decimal:2',
             'fecha_adquisicion' => 'date',
         ];
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | RELACIONES
+    |--------------------------------------------------------------------------
+    */
 
     public function categoria()
     {

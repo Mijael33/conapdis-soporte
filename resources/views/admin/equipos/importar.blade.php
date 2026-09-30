@@ -11,23 +11,27 @@
         <div class="alert alert-info">
             <h6 class="fw-bold"><i class="bi bi-info-circle me-2"></i>Formato del Excel</h6>
             <p class="mb-1">El archivo debe tener las siguientes columnas en la PRIMERA fila (encabezados):</p>
-            <table class="table table-sm table-bordered mt-2">
-                <thead class="table-header">
-                    <tr><th>Columna</th><th>Descripción</th><th>Obligatorio</th></tr>
-                </thead>
-                <tbody>
-                    <tr><td><code>codigo_inventario</code></td><td>Código de inventario institucional</td><td>✅</td></tr>
-                    <tr><td><code>serial_chasis</code></td><td>Serial del chasis</td><td>❌</td></tr>
-                    <tr><td><code>tipo_equipo</code></td><td>Nombre del tipo (debe existir)</td><td>✅</td></tr>
-                    <tr><td><code>departamento</code></td><td>Nombre del departamento (debe existir)</td><td>✅</td></tr>
-                    <tr><td><code>sede</code></td><td>Nombre de la sede (debe existir)</td><td>✅</td></tr>
-                    <tr><td><code>marca</code></td><td>Marca del equipo</td><td>✅</td></tr>
-                    <tr><td><code>modelo</code></td><td>Modelo del equipo</td><td>✅</td></tr>
-                    <tr><td><code>usuario_nombre</code></td><td>Nombre del usuario asignado</td><td>❌</td></tr>
-                    <tr><td><code>usuario_cedula</code></td><td>Cédula del usuario</td><td>❌</td></tr>
-                    <tr><td><code>usuario_cargo</code></td><td>Cargo del usuario</td><td>❌</td></tr>
-                </tbody>
-            </table>
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered mt-2">
+                    <thead class="table-header">
+                        <tr><th>Columna</th><th>Descripción</th><th>Obligatorio</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><code>codigo_inventario</code></td><td>Código de inventario institucional</td><td>✅</td></tr>
+                        <tr><td><code>serial_chasis</code></td><td>Serial del chasis</td><td>❌</td></tr>
+                        <tr><td><code>tipo_equipo</code></td><td>Nombre del tipo (debe existir o se crea automáticamente)</td><td>✅</td></tr>
+                        <tr><td><code>sede</code></td><td>Nombre de la sede (debe existir o se crea automáticamente)</td><td>✅</td></tr>
+                        <tr><td><code>marca</code></td><td>Marca del equipo</td><td>✅</td></tr>
+                        <tr><td><code>modelo</code></td><td>Modelo del equipo</td><td>✅</td></tr>
+                        <tr><td><code>estatus_general</code></td><td>Operativo, En Mantenimiento, Inoperativo, Donado/Desincorporado (por defecto: Operativo)</td><td>❌</td></tr>
+                        <tr><td><code>usuario_nombre</code></td><td>Nombre del usuario asignado</td><td>❌</td></tr>
+                        <tr><td><code>usuario_cedula</code></td><td>Cédula del usuario</td><td>❌</td></tr>
+                        <tr><td><code>usuario_cargo</code></td><td>Cargo del usuario</td><td>❌</td></tr>
+                        <tr><td><code>valor_prudencial</code></td><td>Valor prudencial del equipo (al menos 1 valor obligatorio)</td><td>❌</td></tr>
+                        <tr><td><code>valor_adquisicion</code></td><td>Valor de adquisición (al menos 1 valor obligatorio)</td><td>❌</td></tr>
+                    </tbody>
+                </table>
+            </div>
             <div class="mt-2">
                 <a href="{{ route('admin.equipos.plantilla') }}" class="btn btn-sm btn-outline-conapdis">
                     <i class="bi bi-download"></i> Descargar Plantilla de Ejemplo

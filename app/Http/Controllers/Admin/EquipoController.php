@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Equipo;
 use App\Models\TipoEquipo;
-use App\Models\Departamento;
+use App\Models\Sede;
 use App\Models\Componente;
 use App\Models\EquipoSistemaOperativo;
 use App\Models\BitacoraEquipo;
@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Crypt;
 use App\Traits\FiltroSedeTrait;
 use App\Services\ImportacionService;
+use App\Services\BitacoraService;
 use App\Imports\EquiposImport;
 use App\Exports\EquiposExport;
 use App\Exports\PlantillaEquiposExport;
@@ -29,14 +30,14 @@ class EquipoController extends Controller
 
     public function index(Request $request)
     {
-        $query = Equipo::with(['tipoEquipo', 'departamento.sede.estado']);
+        $query = Equipo::with(['tipoEquipo', 'sede.estado']);
         $query = $this->filtrarPorSede($query);
 
         if ($request->estatus) {
             $query->where('estatus_general', $request->estatus);
         }
-        if ($request->departamento_id) {
-            $query->where('departamento_id', $request->departamento_id);
+        if ($request->sede_id) {
+            $query->where('sede_id', $request->sede_id);
         }
         if ($request->search) {
             $search = $request->search;
@@ -49,16 +50,16 @@ class EquipoController extends Controller
         }
 
         $equipos = $query->orderBy('codigo_inventario_institucional')->paginate(15);
-        $departamentos = Departamento::with('sede')->orderBy('nombre_departamento')->get();
+        $sedes = Sede::with('estado')->orderBy('nombre_sede')->get();
 
-        return view('admin.equipos.index', compact('equipos', 'departamentos'));
+        return view('admin.equipos.index', compact('equipos', 'sedes'));
     }
 
     public function show($id)
     {
         $equipo = Equipo::with([
             'tipoEquipo',
-            'departamento.sede.estado',
+            'sede.estado',
             'componentes.categoria',
             'sistemasOperativos',
             'ordenesServicio.tecnico',
@@ -70,8 +71,8 @@ class EquipoController extends Controller
     public function create()
     {
         $tiposEquipos = TipoEquipo::orderBy('nombre')->get();
-        $departamentos = Departamento::with('sede.estado')->orderBy('nombre_departamento')->get();
-        return view('admin.equipos.create', compact('tiposEquipos', 'departamentos'));
+        $sedes = Sede::with('estado')->orderBy('nombre_sede')->get();
+        return view('admin.equipos.create', compact('tiposEquipos', 'sedes'));
     }
 
     public function store(Request $request)
@@ -80,12 +81,15 @@ class EquipoController extends Controller
             'codigo_inventario_institucional' => 'required|string|max:50|unique:equipos',
             'serial_chasis' => 'nullable|string|max:150',
             'tipo_equipo_id' => 'required|exists:tipos_equipos,id',
-            'departamento_id' => 'required|exists:departamentos,id',
+            'sede_id' => 'required|exists:sedes,id',
             'marca' => 'required|string|max:100',
             'modelo' => 'required|string|max:100',
+            'estatus_general' => 'nullable|in:Operativo,En Mantenimiento,Inoperativo,Donado/Desincorporado',
             'usuario_asignado_nombre' => 'nullable|string|max:150',
             'usuario_asignado_cedula' => 'nullable|string|max:20',
             'usuario_asignado_cargo' => 'nullable|string|max:150',
+            'valor_prudencial' => 'nullable|numeric|min:0',
+            'valor_adquisicion' => 'nullable|numeric|min:0',
             'so_nombre' => 'nullable|array',
             'so_nombre.*' => 'nullable|string|max:100',
             'so_arquitectura' => 'nullable|array',
@@ -95,6 +99,13 @@ class EquipoController extends Controller
             'so_notas' => 'nullable|array',
             'so_notas.*' => 'nullable|string',
         ]);
+
+        if (empty($validated['valor_prudencial']) && empty($validated['valor_adquisicion'])) {
+            return back()->with('error', 'Debe ingresar al menos uno de los dos valores: Valor Prudencial o Valor de Adquisición.')->withInput();
+        }
+
+        // Default estatus general
+        $validated['estatus_general'] = $validated['estatus_general'] ?? 'Operativo';
 
         DB::beginTransaction();
         try {
@@ -124,6 +135,13 @@ class EquipoController extends Controller
                 'fecha_registro' => now(),
             ]);
 
+            BitacoraService::crear(
+                'equipos',
+                $equipo,
+                'Equipo creado: ' . $equipo->codigo_inventario_institucional . ' (' . $equipo->marca . ' ' . $equipo->modelo . ')',
+                $equipo->codigo_inventario_institucional
+            );
+
             DB::commit();
             return redirect()->route('admin.equipos.index')->with('success', 'Equipo creado exitosamente.');
         } catch (\Exception $e) {
@@ -136,8 +154,8 @@ class EquipoController extends Controller
     {
         $equipo = Equipo::with('sistemasOperativos')->findOrFail($id);
         $tiposEquipos = TipoEquipo::orderBy('nombre')->get();
-        $departamentos = Departamento::with('sede.estado')->orderBy('nombre_departamento')->get();
-        return view('admin.equipos.edit', compact('equipo', 'tiposEquipos', 'departamentos'));
+        $sedes = Sede::with('estado')->orderBy('nombre_sede')->get();
+        return view('admin.equipos.edit', compact('equipo', 'tiposEquipos', 'sedes'));
     }
 
     public function update(Request $request, $id)
@@ -148,13 +166,15 @@ class EquipoController extends Controller
             'codigo_inventario_institucional' => 'required|string|max:50|unique:equipos,codigo_inventario_institucional,' . $equipo->id,
             'serial_chasis' => 'nullable|string|max:150',
             'tipo_equipo_id' => 'required|exists:tipos_equipos,id',
-            'departamento_id' => 'required|exists:departamentos,id',
+            'sede_id' => 'required|exists:sedes,id',
             'marca' => 'required|string|max:100',
             'modelo' => 'required|string|max:100',
             'estatus_general' => 'required|in:Operativo,En Mantenimiento,Inoperativo,Donado/Desincorporado',
             'usuario_asignado_nombre' => 'nullable|string|max:150',
             'usuario_asignado_cedula' => 'nullable|string|max:20',
             'usuario_asignado_cargo' => 'nullable|string|max:150',
+            'valor_prudencial' => 'nullable|numeric|min:0',
+            'valor_adquisicion' => 'nullable|numeric|min:0',
             'so_nombre' => 'nullable|array',
             'so_nombre.*' => 'nullable|string|max:100',
             'so_arquitectura' => 'nullable|array',
@@ -165,9 +185,15 @@ class EquipoController extends Controller
             'so_notas.*' => 'nullable|string',
         ]);
 
+        if (empty($validated['valor_prudencial']) && empty($validated['valor_adquisicion'])) {
+            return back()->with('error', 'Debe ingresar al menos uno de los dos valores: Valor Prudencial o Valor de Adquisición.')->withInput();
+        }
+
         DB::beginTransaction();
         try {
             $datosAnteriores = $equipo->toArray();
+            $estatusAnterior = $equipo->estatus_general;
+
             $equipo->update($validated);
 
             $equipo->sistemasOperativos()->delete();
@@ -196,6 +222,19 @@ class EquipoController extends Controller
                 'fecha_registro' => now(),
             ]);
 
+            $descripcion = 'Equipo actualizado: ' . $equipo->codigo_inventario_institucional;
+            if ($estatusAnterior !== $validated['estatus_general']) {
+                $descripcion .= " (estatus: {$estatusAnterior} → {$validated['estatus_general']})";
+            }
+
+            BitacoraService::editar(
+                'equipos',
+                $equipo,
+                $datosAnteriores,
+                $descripcion,
+                $equipo->codigo_inventario_institucional
+            );
+
             DB::commit();
             return redirect()->route('admin.equipos.index')->with('success', 'Equipo actualizado exitosamente.');
         } catch (\Exception $e) {
@@ -217,14 +256,23 @@ class EquipoController extends Controller
 
         DB::beginTransaction();
         try {
+            $datosEquipo = $equipo->toArray();
+
             BitacoraEquipo::create([
                 'equipo_id' => $equipo->id,
                 'usuario_id' => auth()->id(),
                 'accion' => 'eliminado',
                 'descripcion_detallada' => "Equipo {$equipo->codigo_inventario_institucional} eliminado",
-                'datos_anteriores' => $equipo->toArray(),
+                'datos_anteriores' => $datosEquipo,
                 'fecha_registro' => now(),
             ]);
+
+            BitacoraService::eliminar(
+                'equipos',
+                $equipo,
+                'Equipo eliminado: ' . $equipo->codigo_inventario_institucional,
+                $equipo->codigo_inventario_institucional
+            );
 
             $equipo->delete();
 
@@ -248,6 +296,15 @@ class EquipoController extends Controller
             'fecha_acceso' => now(),
         ]);
 
+        BitacoraService::accion(
+            'equipos',
+            'ver_password',
+            'Consulta de contraseña del SO "' . $so->nombre . '" del equipo ' . ($so->equipo->codigo_inventario_institucional ?? 'N/A'),
+            $so->equipo,
+            ['so' => $so->nombre],
+            $so->equipo->codigo_inventario_institucional ?? null
+        );
+
         $password = $so->password_encriptada ? Crypt::decryptString($so->password_encriptada) : null;
 
         return response()->json([
@@ -261,7 +318,7 @@ class EquipoController extends Controller
     {
         $equipo = Equipo::findOrFail($id);
         $componentesDisponibles = Componente::where('estatus', 'Disponible')
-            ->where('sede_id', $equipo->departamento->sede_id)
+            ->where('sede_id', $equipo->sede_id)
             ->orderBy('marca')->get();
         return view('admin.equipos.asignar-componente', compact('equipo', 'componentesDisponibles'));
     }
@@ -298,6 +355,15 @@ class EquipoController extends Controller
                 'datos_nuevos' => ['equipo' => $equipo->codigo_inventario_institucional],
                 'fecha_registro' => now(),
             ]);
+
+            BitacoraService::accion(
+                'equipos',
+                'instalar_componente',
+                "Componente {$componente->serial_unico} instalado en equipo {$equipo->codigo_inventario_institucional}",
+                $equipo,
+                ['componente_id' => $componente->id, 'serial' => $componente->serial_unico],
+                $equipo->codigo_inventario_institucional
+            );
 
             DB::commit();
             return redirect()->route('admin.equipos.show', $equipo)->with('success', 'Componente asignado.');
@@ -339,6 +405,15 @@ class EquipoController extends Controller
                 'fecha_registro' => now(),
             ]);
 
+            BitacoraService::accion(
+                'equipos',
+                'remover_componente',
+                "Componente {$componente->serial_unico} removido del equipo {$equipo->codigo_inventario_institucional}",
+                $equipo,
+                ['componente_id' => $componente->id, 'serial' => $componente->serial_unico],
+                $equipo->codigo_inventario_institucional
+            );
+
             DB::commit();
             return redirect()->route('admin.equipos.show', $equipo)->with('success', 'Componente removido.');
         } catch (\Exception $e) {
@@ -372,6 +447,14 @@ class EquipoController extends Controller
 
             $resumen = $service->generarResumen();
 
+            BitacoraService::accion(
+                'equipos',
+                'importar',
+                'Importación masiva de equipos: ' . $resumen['importados'] . ' importados, ' . $resumen['fallidos'] . ' fallidos',
+                null,
+                $resumen
+            );
+
             return redirect()->route('admin.equipos.index')
                 ->with('importacion_resumen', $resumen)
                 ->with('success', 'Equipos importados exitosamente.');
@@ -390,9 +473,9 @@ class EquipoController extends Controller
         return Storage::disk('public')->download($ruta);
     }
 
-    public function exportarExcel()
+    public function exportarExcel(Request $request)
     {
-        return Excel::download(new EquiposExport, 'equipos-' . date('Y-m-d') . '.xlsx');
+        return Excel::download(new EquiposExport($request), 'equipos-' . date('Y-m-d') . '.xlsx');
     }
 
     public function exportarPDF()
@@ -403,14 +486,15 @@ class EquipoController extends Controller
         $sedeId = session('filtro_sede_id');
         $estadoId = session('filtro_estado_id');
 
-        $query = Equipo::with(['tipoEquipo', 'departamento.sede.estado']);
+        $query = Equipo::with(['tipoEquipo', 'sede.estado']);
 
         if (!$esAdmin && !$esAuditor) {
-            $query->whereHas('departamento.sede', fn($q) => $q->where('id', $user->sede_id));
+            $query->where('sede_id', $user->sede_id);
         } elseif ($sedeId) {
-            $query->whereHas('departamento.sede', fn($q) => $q->where('id', $sedeId));
+            $query->where('sede_id', $sedeId);
         } elseif ($estadoId) {
-            $query->whereHas('departamento.sede', fn($q) => $q->where('estado_id', $estadoId));
+            $sedeIds = Sede::where('estado_id', $estadoId)->pluck('id');
+            $query->whereIn('sede_id', $sedeIds);
         }
 
         $equipos = $query->orderBy('codigo_inventario_institucional')->get();
@@ -435,7 +519,7 @@ class EquipoController extends Controller
     {
         $equipo = Equipo::with([
             'tipoEquipo',
-            'departamento.sede.estado',
+            'sede.estado',
             'componentes.categoria',
             'sistemasOperativos',
             'ordenesServicio.tecnico',
@@ -453,20 +537,10 @@ class EquipoController extends Controller
 
     public function pdfPegatina($id)
     {
-        $equipo = Equipo::with([
-            'tipoEquipo',
-            'departamento.sede.estado'
-        ])->findOrFail($id);
-    
+        $equipo = Equipo::with(['sede.estado'])->findOrFail($id);
+
         $pdf = Pdf::loadView('admin.equipos.pdf_pegatina', compact('equipo'));
-    
-        $pdf->setPaper([
-            0,
-            0,
-            90 * 2.83464567,
-            45 * 2.83464567
-        ]);
-    
+        $pdf->setPaper([0, 0, 255.118, 127.559]);
         $pdf->setOptions([
             'isRemoteEnabled' => true,
             'isHtml5ParserEnabled' => true,
@@ -474,9 +548,7 @@ class EquipoController extends Controller
             'defaultFont' => 'DejaVu Sans',
             'dpi' => 96,
         ]);
-    
-        return $pdf->download(
-            'Pegatina-' . $equipo->codigo_inventario_institucional . '.pdf'
-        );
+
+        return $pdf->download('Pegatina-' . $equipo->codigo_inventario_institucional . '.pdf');
     }
 }

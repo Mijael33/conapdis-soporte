@@ -5,9 +5,6 @@
  * 
  * Para ejecutar:
  * php artisan tinker < database/test-data.php
- * 
- * O copiar y pegar bloque por bloque en:
- * php artisan tinker
  */
 
 // ====================================================================
@@ -49,7 +46,6 @@ use App\Models\Estado;
 use App\Models\Sede;
 use Illuminate\Support\Facades\Hash;
 
-// Coordinador Carabobo
 $carabobo = Estado::where('nombre', 'Carabobo')->first();
 $sedeCarabobo = Sede::where('nombre_sede', 'Oficina Regional Carabobo')->first();
 User::firstOrCreate(['email' => 'coordinador@conapdis.gob.ve'], [
@@ -60,7 +56,6 @@ User::firstOrCreate(['email' => 'coordinador@conapdis.gob.ve'], [
     'sede_id' => $sedeCarabobo->id,
 ])->assignRole('Coordinador de Soporte');
 
-// Técnico Zulia
 $zulia = Estado::where('nombre', 'Zulia')->first();
 $sedeZulia = Sede::where('nombre_sede', 'Oficina Regional Zulia')->first();
 User::firstOrCreate(['email' => 'tecnico@conapdis.gob.ve'], [
@@ -71,7 +66,6 @@ User::firstOrCreate(['email' => 'tecnico@conapdis.gob.ve'], [
     'sede_id' => $sedeZulia->id,
 ])->assignRole('Técnico');
 
-// Técnico Lara
 $lara = Estado::where('nombre', 'Lara')->first();
 $sedeLara = Sede::where('nombre_sede', 'Oficina Regional Lara')->first();
 User::firstOrCreate(['email' => 'tecnico.lara@conapdis.gob.ve'], [
@@ -82,7 +76,6 @@ User::firstOrCreate(['email' => 'tecnico.lara@conapdis.gob.ve'], [
     'sede_id' => $sedeLara->id,
 ])->assignRole('Técnico');
 
-// Auditor Nacional
 $dc = Estado::where('nombre', 'Distrito Capital')->first();
 $sedeCentral = Sede::where('nombre_sede', 'Sede Central CONAPDIS')->first();
 User::firstOrCreate(['email' => 'auditor@conapdis.gob.ve'], [
@@ -101,7 +94,6 @@ echo "✓ Usuarios creados.\n";
 echo "Creando componentes de prueba...\n";
 
 use App\Models\Componente;
-use App\Models\Departamento;
 
 // --- SEDE CENTRAL (Distrito Capital) ---
 $cpu1 = Componente::firstOrCreate(['serial_unico' => 'CPU-INTEL-i9-001'], [
@@ -262,7 +254,6 @@ echo "✓ Componentes creados.\n";
 echo "Creando equipos y asignando componentes...\n";
 
 use App\Models\Equipo;
-use App\Models\TipoEquipo;
 use Illuminate\Support\Facades\DB;
 
 $tipoPC = TipoEquipo::where('nombre', 'PC de Escritorio')->first();
@@ -271,22 +262,18 @@ $tipoServidor = TipoEquipo::where('nombre', 'Servidor')->first();
 $tipoImpresora = TipoEquipo::where('nombre', 'Impresora')->first();
 
 // --- EQUIPOS SEDE CENTRAL ---
-$deptoTecCentral = Departamento::where('nombre_departamento', 'Dirección de Tecnología')->where('sede_id', $sedeCentral->id)->first();
-$deptoRrhhCentral = Departamento::where('nombre_departamento', 'Recursos Humanos')->where('sede_id', $sedeCentral->id)->first();
-$deptoAdminCentral = Departamento::where('nombre_departamento', 'Administración')->where('sede_id', $sedeCentral->id)->first();
 
-// PC-001 - Sede Central - Dirección de Tecnología (OPERATIVO - con componentes)
+// PC-001 - Sede Central (OPERATIVO - con componentes)
 $equipo1 = Equipo::firstOrCreate(['codigo_inventario_institucional' => 'CONAPDIS-PC-001'], [
     'serial_chasis' => 'CHS-DELL-OPTIPLEX-001',
     'tipo_equipo_id' => $tipoPC->id,
-    'departamento_id' => $deptoTecCentral->id,
+    'sede_id' => $sedeCentral->id,
     'marca' => 'Dell', 'modelo' => 'OptiPlex 7080',
     'estatus_general' => 'Operativo',
     'usuario_asignado_nombre' => 'Carlos Mendoza',
     'usuario_asignado_cedula' => 'V-12345678',
     'usuario_asignado_cargo' => 'Director de Tecnología',
 ]);
-// Asignar componentes y cambiar estatus a Instalado
 if (!$equipo1->componentes()->where('componente_id', $cpu1->id)->exists()) {
     DB::beginTransaction();
     $equipo1->componentes()->attach($cpu1->id, ['fecha_instalacion' => now(), 'activo' => true]); $cpu1->update(['estatus' => 'Instalado']);
@@ -298,11 +285,11 @@ if (!$equipo1->componentes()->where('componente_id', $cpu1->id)->exists()) {
     echo "   - CONAPDIS-PC-001: CPU i9 + 64GB RAM + 2TB SSD + RTX 4090\n";
 }
 
-// PC-002 - Sede Central - Recursos Humanos (OPERATIVO)
+// PC-002 - Sede Central (OPERATIVO)
 $equipo2 = Equipo::firstOrCreate(['codigo_inventario_institucional' => 'CONAPDIS-PC-002'], [
     'serial_chasis' => 'CHS-HP-ELITEDESK-001',
     'tipo_equipo_id' => $tipoPC->id,
-    'departamento_id' => $deptoRrhhCentral->id,
+    'sede_id' => $sedeCentral->id,
     'marca' => 'HP', 'modelo' => 'EliteDesk 800 G6',
     'estatus_general' => 'Operativo',
     'usuario_asignado_nombre' => 'María González',
@@ -323,7 +310,7 @@ if (!$equipo2->componentes()->where('componente_id', $cpu2->id)->exists()) {
 $equipo3 = Equipo::firstOrCreate(['codigo_inventario_institucional' => 'CONAPDIS-SRV-001'], [
     'serial_chasis' => 'CHS-DELL-POWEREDGE-001',
     'tipo_equipo_id' => $tipoServidor->id,
-    'departamento_id' => $deptoTecCentral->id,
+    'sede_id' => $sedeCentral->id,
     'marca' => 'Dell', 'modelo' => 'PowerEdge R750',
     'estatus_general' => 'Operativo',
     'usuario_asignado_nombre' => 'Sistema',
@@ -332,11 +319,11 @@ $equipo3 = Equipo::firstOrCreate(['codigo_inventario_institucional' => 'CONAPDIS
 ]);
 echo "   - CONAPDIS-SRV-001: Servidor (sin componentes asignados)\n";
 
-// PC-003 - Sede Central - Administración (EN MANTENIMIENTO)
+// PC-003 - Sede Central - (EN MANTENIMIENTO)
 $equipo4 = Equipo::firstOrCreate(['codigo_inventario_institucional' => 'CONAPDIS-PC-003'], [
     'serial_chasis' => 'CHS-LEN-IDEACENTRE-001',
     'tipo_equipo_id' => $tipoPC->id,
-    'departamento_id' => $deptoAdminCentral->id,
+    'sede_id' => $sedeCentral->id,
     'marca' => 'Lenovo', 'modelo' => 'IdeaCentre 5',
     'estatus_general' => 'En Mantenimiento',
     'usuario_asignado_nombre' => 'Pedro Ramírez',
@@ -351,14 +338,12 @@ if (!$equipo4->componentes()->where('componente_id', $cpu3->id)->exists()) {
 }
 
 // --- EQUIPOS SEDE CARABOBO ---
-$deptoTecCarabobo = Departamento::where('nombre_departamento', 'Dirección de Tecnología')->where('sede_id', $sedeCarabobo->id)->first();
-$deptoRrhhCarabobo = Departamento::where('nombre_departamento', 'Recursos Humanos')->where('sede_id', $sedeCarabobo->id)->first();
 
-// PC-004 - Carabobo - Tecnología
+// PC-004 - Carabobo
 $equipo5 = Equipo::firstOrCreate(['codigo_inventario_institucional' => 'CONAPDIS-PC-004'], [
     'serial_chasis' => 'CHS-ASUS-ROG-001',
     'tipo_equipo_id' => $tipoPC->id,
-    'departamento_id' => $deptoTecCarabobo->id,
+    'sede_id' => $sedeCarabobo->id,
     'marca' => 'ASUS', 'modelo' => 'ROG Strix G16',
     'estatus_general' => 'Operativo',
     'usuario_asignado_nombre' => 'Ana López',
@@ -374,11 +359,11 @@ if (!$equipo5->componentes()->where('componente_id', $cpu4->id)->exists()) {
     echo "   - CONAPDIS-PC-004: Ryzen 9 + 32GB RAM + 1TB SSD\n";
 }
 
-// LAP-001 - Carabobo - RRHH (OPERATIVO)
+// LAP-001 - Carabobo (OPERATIVO)
 $equipo6 = Equipo::firstOrCreate(['codigo_inventario_institucional' => 'CONAPDIS-LAP-001'], [
     'serial_chasis' => 'CHS-LEN-THINKPAD-001',
     'tipo_equipo_id' => $tipoLaptop->id,
-    'departamento_id' => $deptoRrhhCarabobo->id,
+    'sede_id' => $sedeCarabobo->id,
     'marca' => 'Lenovo', 'modelo' => 'ThinkPad X1 Carbon',
     'estatus_general' => 'Operativo',
     'usuario_asignado_nombre' => 'Laura Martínez',
@@ -393,11 +378,11 @@ if (!$equipo6->componentes()->where('componente_id', $cpu5->id)->exists()) {
     echo "   - CONAPDIS-LAP-001: Ryzen 7 7800X3D + 2TB SSD PCIe 5.0\n";
 }
 
-// PC-005 - Carabobo - Tecnología (EN MANTENIMIENTO - RAM en revisión)
+// PC-005 - Carabobo (EN MANTENIMIENTO - RAM en revisión)
 $equipo7 = Equipo::firstOrCreate(['codigo_inventario_institucional' => 'CONAPDIS-PC-005'], [
     'serial_chasis' => 'CHS-DELL-VOSTRO-001',
     'tipo_equipo_id' => $tipoPC->id,
-    'departamento_id' => $deptoTecCarabobo->id,
+    'sede_id' => $sedeCarabobo->id,
     'marca' => 'Dell', 'modelo' => 'Vostro 3910',
     'estatus_general' => 'En Mantenimiento',
     'usuario_asignado_nombre' => 'José Herrera',
@@ -412,14 +397,12 @@ if (!$equipo7->componentes()->where('componente_id', $ram4->id)->exists()) {
 }
 
 // --- EQUIPOS SEDE ZULIA ---
-$deptoAdminZulia = Departamento::where('nombre_departamento', 'Administración')->where('sede_id', $sedeZulia->id)->first();
-$deptoAtencionZulia = Departamento::where('nombre_departamento', 'Atención al Ciudadano')->where('sede_id', $sedeZulia->id)->first();
 
-// PC-006 - Zulia - Administración
+// PC-006 - Zulia
 $equipo8 = Equipo::firstOrCreate(['codigo_inventario_institucional' => 'CONAPDIS-PC-006'], [
     'serial_chasis' => 'CHS-HP-PAVILION-001',
     'tipo_equipo_id' => $tipoPC->id,
-    'departamento_id' => $deptoAdminZulia->id,
+    'sede_id' => $sedeZulia->id,
     'marca' => 'HP', 'modelo' => 'Pavilion TP01',
     'estatus_general' => 'Operativo',
     'usuario_asignado_nombre' => 'Rosa Díaz',
@@ -436,11 +419,11 @@ if (!$equipo8->componentes()->where('componente_id', $cpu6->id)->exists()) {
     echo "   - CONAPDIS-PC-006: i3 + 16GB DDR4 + 1TB SSD + 850W PSU\n";
 }
 
-// IMP-001 - Zulia - Atención al Ciudadano
+// IMP-001 - Zulia
 $equipo9 = Equipo::firstOrCreate(['codigo_inventario_institucional' => 'CONAPDIS-IMP-001'], [
     'serial_chasis' => 'CHS-HP-LASERJET-001',
     'tipo_equipo_id' => $tipoImpresora->id,
-    'departamento_id' => $deptoAtencionZulia->id,
+    'sede_id' => $sedeZulia->id,
     'marca' => 'HP', 'modelo' => 'LaserJet Pro M404dn',
     'estatus_general' => 'Operativo',
     'usuario_asignado_nombre' => 'Oficina Atención',
@@ -449,11 +432,11 @@ $equipo9 = Equipo::firstOrCreate(['codigo_inventario_institucional' => 'CONAPDIS
 ]);
 echo "   - CONAPDIS-IMP-001: Impresora HP LaserJet\n";
 
-// PC-007 - Zulia - Atención al Ciudadano (INOPERATIVO)
+// PC-007 - Zulia (INOPERATIVO)
 $equipo10 = Equipo::firstOrCreate(['codigo_inventario_institucional' => 'CONAPDIS-PC-007'], [
     'serial_chasis' => 'CHS-OLD-DELL-001',
     'tipo_equipo_id' => $tipoPC->id,
-    'departamento_id' => $deptoAtencionZulia->id,
+    'sede_id' => $sedeZulia->id,
     'marca' => 'Dell', 'modelo' => 'OptiPlex 3020',
     'estatus_general' => 'Inoperativo',
     'usuario_asignado_nombre' => 'Sin asignar',
@@ -462,20 +445,18 @@ $equipo10 = Equipo::firstOrCreate(['codigo_inventario_institucional' => 'CONAPDI
 ]);
 if (!$equipo10->componentes()->where('componente_id', $ssd6->id)->exists()) {
     DB::beginTransaction();
-    $equipo10->componentes()->attach($ssd6->id, ['fecha_instalacion' => now()->subMonths(3), 'activo' => false, 'fecha_desinstalacion' => now()]); 
-    // El SSD queda Disponible porque se desinstaló
+    $equipo10->componentes()->attach($ssd6->id, ['fecha_instalacion' => now()->subMonths(3), 'activo' => false, 'fecha_desinstalacion' => now()]);
     DB::commit();
     echo "   - CONAPDIS-PC-007: INOPERATIVO (SSD removido)\n";
 }
 
 // --- EQUIPOS SEDE LARA ---
-$deptoTecLara = Departamento::where('nombre_departamento', 'Dirección de Tecnología')->where('sede_id', $sedeLara->id)->first();
 
-// PC-008 - Lara - Tecnología
+// PC-008 - Lara
 $equipo11 = Equipo::firstOrCreate(['codigo_inventario_institucional' => 'CONAPDIS-PC-008'], [
     'serial_chasis' => 'CHS-ACER-ASPIRE-001',
     'tipo_equipo_id' => $tipoPC->id,
-    'departamento_id' => $deptoTecLara->id,
+    'sede_id' => $sedeLara->id,
     'marca' => 'Acer', 'modelo' => 'Aspire TC-1780',
     'estatus_general' => 'Operativo',
     'usuario_asignado_nombre' => 'Fernando Rojas',

@@ -17,7 +17,7 @@ class ReporteController extends Controller
     {
         $equipo->load([
             'tipoEquipo',
-            'departamento.sede.estado',
+            'sede.estado',
             'componentes.categoria',
             'ordenesServicio' => function ($query) {
                 $query->orderBy('created_at', 'desc')->limit(5);
@@ -35,7 +35,11 @@ class ReporteController extends Controller
      */
     public function ordenServicio(OrdenServicio $ordene)
     {
-        $ordene->load(['equipo.tipoEquipo', 'equipo.departamento.sede.estado', 'tecnico']);
+        $ordene->load([
+            'equipo.tipoEquipo', 
+            'equipo.sede.estado',
+            'tecnico'
+        ]);
 
         $pdf = Pdf::loadView('admin.reportes.orden-servicio', compact('ordene'));
         $pdf->setPaper('letter');

@@ -10,11 +10,6 @@ class RolePermissionSeeder extends Seeder
 {
     public function run(): void
     {
-        /*
-        |--------------------------------------------------------------------------
-        | PERMISOS ORGANIZADOS POR MÓDULO
-        |--------------------------------------------------------------------------
-        */
         $modulos = [
             'dashboard' => [
                 'dashboard.ver',
@@ -95,6 +90,10 @@ class RolePermissionSeeder extends Seeder
                 'reportes.generar',
                 'reportes.exportar',
             ],
+            'valorizacion' => [
+                'valorizacion.ver',
+                'valorizacion.exportar',
+            ],
             'usuarios' => [
                 'usuarios.ver',
                 'usuarios.crear',
@@ -107,6 +106,12 @@ class RolePermissionSeeder extends Seeder
                 'roles.editar',
                 'roles.eliminar',
             ],
+            'estados' => [
+                'estados.ver',
+                'estados.crear',
+                'estados.editar',
+                'estados.eliminar',
+            ],
         ];
 
         foreach ($modulos as $modulo => $permisos) {
@@ -118,12 +123,6 @@ class RolePermissionSeeder extends Seeder
             }
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | ROL ADMINISTRADOR (ÚNICO PRECARGADO)
-        |--------------------------------------------------------------------------
-        | El admin tiene TODOS los permisos. Los demás roles se crean por CRUD.
-        */
         $admin = Role::firstOrCreate(['name' => 'Administrador', 'guard_name' => 'web']);
         $admin->syncPermissions(Permission::all());
     }

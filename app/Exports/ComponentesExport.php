@@ -45,6 +45,8 @@ class ComponentesExport implements FromCollection, WithHeadings, WithMapping, Sh
             'Estatus',
             'Equipo Actual',
             'Observaciones',
+            'Valor Prudencial (Bs.)',
+            'Valor Adquisición (Bs.)',
         ];
     }
 
@@ -65,6 +67,8 @@ class ComponentesExport implements FromCollection, WithHeadings, WithMapping, Sh
             $componente->estatus,
             $equipoActual,
             $componente->observaciones,
+            $componente->valor_prudencial,
+            $componente->valor_adquisicion,
         ];
     }
 }

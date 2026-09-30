@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <title>Listado de Equipos - CONAPDIS</title>
     <style>
-        * { font-family: 'DejaVu Sans', sans-serif; }
-        body { font-size: 8pt; color: #1e293b; margin: 0; padding: 15px; }
+        * { font-family: 'DejaVu Sans', sans-serif; box-sizing: border-box; }
+        body { font-size: 8pt; color: #1e293b; margin: 0; padding: 10px; }
 
         .titulo-doc {
             text-align: center;
@@ -13,39 +13,61 @@
             font-weight: 700;
             color: #001e5c;
             text-transform: uppercase;
-            padding: 8px;
+            padding: 6px;
             background: #f4f6f9;
             border-top: 2px solid #003097;
             border-bottom: 2px solid #003097;
-            margin: 12px 0;
+            margin: 10px 0;
         }
 
         .info-doc {
             text-align: center;
             font-size: 8pt;
             color: #64748b;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
 
-        table { width: 100%; border-collapse: collapse; }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            table-layout: fixed; 
+        }
+
         .equipos-table th {
             background: #001e5c;
             color: white;
-            padding: 6px 6px;
-            font-size: 7pt;
+            padding: 6px 4px;
+            font-size: 6.5pt;
             text-align: left;
             text-transform: uppercase;
+            word-wrap: break-word;
         }
+
         .equipos-table td {
-            padding: 5px 6px;
+            padding: 5px 4px;
             border: 1px solid #e2e8f0;
-            font-size: 7pt;
+            font-size: 6.5pt;
+            word-wrap: break-word;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
+
+        .col-codigo { width: 13%; }
+        .col-tipo { width: 11%; }
+        .col-marca { width: 16%; }
+        .col-estado { width: 12%; }
+        .col-estatus { width: 12%; }
+        .col-usuario { width: 16%; }
+        .col-valor-p { width: 10%; }
+        .col-valor-a { width: 10%; }
+
         .equipos-table tr:nth-child(even) { background: #f8fafc; }
 
+        tr { page-break-inside: avoid; }
+
         .pie {
-            margin-top: 20px;
-            padding-top: 10px;
+            margin-top: 15px;
+            padding-top: 8px;
             border-top: 1px solid #e2e8f0;
             text-align: center;
             font-size: 7pt;
@@ -68,27 +90,27 @@
     <table class="equipos-table">
         <thead>
             <tr>
-                <th>Código</th>
-                <th>Tipo</th>
-                <th>Marca/Modelo</th>
-                <th>Estado</th>
-                <th>Sede</th>
-                <th>Departamento</th>
-                <th>Estatus</th>
-                <th>Usuario</th>
+                <th class="col-codigo">Código</th>
+                <th class="col-tipo">Tipo</th>
+                <th class="col-marca">Marca/Modelo</th>
+                <th class="col-estado">Estado</th>
+                <th class="col-estatus">Estatus</th>
+                <th class="col-usuario">Usuario</th>
+                <th class="col-valor-p">Val. Prud.</th>
+                <th class="col-valor-a">Val. Adq.</th>
             </tr>
         </thead>
         <tbody>
             @forelse($equipos as $e)
             <tr>
-                <td>{{ $e->codigo_inventario_institucional }}</td>
-                <td>{{ $e->tipoEquipo->nombre ?? 'N/A' }}</td>
-                <td>{{ $e->marca }} {{ $e->modelo }}</td>
-                <td>{{ $e->departamento->sede->estado->nombre ?? 'N/A' }}</td>
-                <td>{{ $e->departamento->sede->nombre_sede ?? 'N/A' }}</td>
-                <td>{{ $e->departamento->nombre_departamento ?? 'N/A' }}</td>
-                <td>{{ $e->estatus_general }}</td>
-                <td>{{ $e->usuario_asignado_nombre ?? '-' }}</td>
+                <td class="col-codigo">{{ $e->codigo_inventario_institucional }}</td>
+                <td class="col-tipo">{{ $e->tipoEquipo->nombre ?? 'N/A' }}</td>
+                <td class="col-marca">{{ $e->marca }} {{ $e->modelo }}</td>
+                <td class="col-estado">{{ $e->sede->estado->nombre ?? 'N/A' }}</td>
+                <td class="col-estatus">{{ $e->estatus_general }}</td>
+                <td class="col-usuario">{{ $e->usuario_asignado_nombre ?? '-' }}</td>
+                <td class="col-valor-p">{{ $e->valor_prudencial ? number_format($e->valor_prudencial, 2, ',', '.') : '-' }}</td>
+                <td class="col-valor-a">{{ $e->valor_adquisicion ? number_format($e->valor_adquisicion, 2, ',', '.') : '-' }}</td>
             </tr>
             @empty
             <tr>

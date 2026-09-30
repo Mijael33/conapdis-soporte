@@ -33,6 +33,8 @@
                 <tr><th>Usuario Asignado</th><td>{{ $equipo->usuario_asignado_nombre ?? 'N/A' }}</td></tr>
                 <tr><th>Cédula</th><td>{{ $equipo->usuario_asignado_cedula ?? 'N/A' }}</td></tr>
                 <tr><th>Cargo</th><td>{{ $equipo->usuario_asignado_cargo ?? 'N/A' }}</td></tr>
+                <tr><th>Valor Prudencial</th><td>{{ $equipo->valor_prudencial ? number_format($equipo->valor_prudencial, 2, ',', '.') . ' Bs.' : 'N/A' }}</td></tr>
+                <tr><th>Valor Adquisición</th><td>{{ $equipo->valor_adquisicion ? number_format($equipo->valor_adquisicion, 2, ',', '.') . ' Bs.' : 'N/A' }}</td></tr>
                 <tr><th>Observaciones</th><td>{{ $equipo->observaciones ?? 'N/A' }}</td></tr>
             </table>
         </div>

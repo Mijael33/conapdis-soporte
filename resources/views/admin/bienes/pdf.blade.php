@@ -76,6 +76,8 @@
                 <th>Sede</th>
                 <th>Estatus</th>
                 <th>Asignado</th>
+                <th>Val. Prud.</th>
+                <th>Val. Adq.</th>
             </tr>
         </thead>
         <tbody>
@@ -89,10 +91,12 @@
                 <td>{{ $b->sede->nombre_sede ?? 'N/A' }}</td>
                 <td>{{ $b->estatus }}</td>
                 <td>{{ $b->usuario_asignado_nombre ?? '-' }}</td>
+                <td>{{ $b->valor_prudencial ? number_format($b->valor_prudencial, 2, ',', '.') : '-' }}</td>
+                <td>{{ $b->valor_adquisicion ? number_format($b->valor_adquisicion, 2, ',', '.') : '-' }}</td>
             </tr>
             @empty
             <tr>
-                <td colspan="8" style="text-align: center; color: #94a3b8; padding: 15px;">No hay bienes registrados</td>
+                <td colspan="10" style="text-align: center; color: #94a3b8; padding: 15px;">No hay bienes registrados</td>
             </tr>
             @endforelse
         </tbody>

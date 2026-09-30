@@ -13,6 +13,7 @@ use App\Models\Vehiculo;
 use App\Models\EquipoSonido;
 use App\Models\RegistroEntradaSalida;
 use App\Models\User;
+use Spatie\Permission\Models\Role;
 use Illuminate\Http\Request;
 use App\Traits\FiltroSedeTrait;
 
@@ -33,6 +34,23 @@ class DashboardController extends Controller
 
         /*
         |--------------------------------------------------------------------------
+        | HELPER LOCAL PARA APLICAR FILTRO DE SEDE/ESTADO
+        |--------------------------------------------------------------------------
+        */
+        $aplicarFiltroSede = function ($query) use ($sedeId, $estadoId, $esAdmin, $esAuditor, $user) {
+            if ($sedeId) {
+                $query->where('sede_id', $sedeId);
+            } elseif ($estadoId) {
+                $sedeIds = Sede::where('estado_id', $estadoId)->pluck('id');
+                $query->whereIn('sede_id', $sedeIds);
+            } elseif (!$esAdmin && !$esAuditor) {
+                $query->where('sede_id', $user->sede_id);
+            }
+            return $query;
+        };
+
+        /*
+        |--------------------------------------------------------------------------
         | MÉTRICAS DE TECNOLOGÍA
         |--------------------------------------------------------------------------
         */
@@ -44,16 +62,7 @@ class DashboardController extends Controller
         $equiposMantenimiento = (clone $equiposQuery)->where('estatus_general', 'En Mantenimiento')->count();
         $equiposInoperativos = (clone $equiposQuery)->where('estatus_general', 'Inoperativo')->count();
 
-        $componentesQuery = Componente::query();
-        if ($sedeId) {
-            $componentesQuery->where('sede_id', $sedeId);
-        } elseif ($estadoId) {
-            $sedeIds = Sede::where('estado_id', $estadoId)->pluck('id');
-            $componentesQuery->whereIn('sede_id', $sedeIds);
-        } elseif (!$esAdmin && !$esAuditor) {
-            $componentesQuery->where('sede_id', $user->sede_id);
-        }
-
+        $componentesQuery = $aplicarFiltroSede(Componente::query());
         $totalComponentes = $componentesQuery->count();
         $componentesDisponibles = (clone $componentesQuery)->where('estatus', 'Disponible')->count();
         $componentesInstalados = (clone $componentesQuery)->where('estatus', 'Instalado')->count();
@@ -73,18 +82,10 @@ class DashboardController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | MÉTRICAS DE BIENES
+        | MÉTRICAS DE BIENES NACIONALES
         |--------------------------------------------------------------------------
         */
-        $bienesQuery = BienNacional::query();
-        if ($sedeId) {
-            $bienesQuery->where('sede_id', $sedeId);
-        } elseif ($estadoId) {
-            $sedeIds = Sede::where('estado_id', $estadoId)->pluck('id');
-            $bienesQuery->whereIn('sede_id', $sedeIds);
-        } elseif (!$esAdmin && !$esAuditor) {
-            $bienesQuery->where('sede_id', $user->sede_id);
-        }
+        $bienesQuery = $aplicarFiltroSede(BienNacional::query());
         $totalBienes = $bienesQuery->count();
         $bienesDisponibles = (clone $bienesQuery)->where('estatus', 'Disponible')->count();
 
@@ -93,51 +94,56 @@ class DashboardController extends Controller
         | MÉTRICAS DE VEHÍCULOS
         |--------------------------------------------------------------------------
         */
-        $vehiculosQuery = Vehiculo::query();
-        if ($sedeId) {
-            $vehiculosQuery->where('sede_id', $sedeId);
-        } elseif ($estadoId) {
-            $sedeIds = Sede::where('estado_id', $estadoId)->pluck('id');
-            $vehiculosQuery->whereIn('sede_id', $sedeIds);
-        } elseif (!$esAdmin && !$esAuditor) {
-            $vehiculosQuery->where('sede_id', $user->sede_id);
-        }
+        $vehiculosQuery = $aplicarFiltroSede(Vehiculo::query());
         $totalVehiculos = $vehiculosQuery->count();
         $vehiculosDisponibles = (clone $vehiculosQuery)->where('estatus', 'Disponible')->count();
 
         /*
         |--------------------------------------------------------------------------
-        | MÉTRICAS DE SONIDO
+        | MÉTRICAS DE EQUIPOS DE SONIDO
         |--------------------------------------------------------------------------
         */
-        $sonidoQuery = EquipoSonido::query();
-        if ($sedeId) {
-            $sonidoQuery->where('sede_id', $sedeId);
-        } elseif ($estadoId) {
-            $sedeIds = Sede::where('estado_id', $estadoId)->pluck('id');
-            $sonidoQuery->whereIn('sede_id', $sedeIds);
-        } elseif (!$esAdmin && !$esAuditor) {
-            $sonidoQuery->where('sede_id', $user->sede_id);
-        }
+        $sonidoQuery = $aplicarFiltroSede(EquipoSonido::query());
         $totalSonido = $sonidoQuery->count();
         $sonidoDisponible = (clone $sonidoQuery)->where('estatus', 'Disponible')->count();
 
         /*
         |--------------------------------------------------------------------------
-        | MÉTRICAS DE MOVIMIENTOS
+        | MÉTRICAS DE ENTRADA/SALIDA
         |--------------------------------------------------------------------------
         */
-        $movimientosQuery = RegistroEntradaSalida::query();
-        if ($sedeId) {
-            $movimientosQuery->where('sede_id', $sedeId);
-        } elseif ($estadoId) {
-            $sedeIds = Sede::where('estado_id', $estadoId)->pluck('id');
-            $movimientosQuery->whereIn('sede_id', $sedeIds);
-        } elseif (!$esAdmin && !$esAuditor) {
-            $movimientosQuery->where('sede_id', $user->sede_id);
-        }
-        $totalSalidas = (clone $movimientosQuery)->where('tipo', 'Salida')->count();
-        $totalEntradas = (clone $movimientosQuery)->where('tipo', 'Entrada')->count();
+        $movimientosQuery = $aplicarFiltroSede(RegistroEntradaSalida::query());
+        $totalSalidas = (clone $movimientosQuery)->count();
+        $salidasPendientes = (clone $movimientosQuery)->where('estatus', 'Pendiente')->count();
+        $totalEntradas = (clone $movimientosQuery)->where('estatus', 'Completado')->count();
+
+        /*
+        |--------------------------------------------------------------------------
+        | MÉTRICAS DE VALORIZACIÓN (NUEVO)
+        |--------------------------------------------------------------------------
+        | Suma de valor_prudencial y valor_adquisicion por módulo.
+        | Usa COALESCE para no romper si algún valor es NULL.
+        */
+        $valorEquiposPrudencial = (clone $equiposQuery)->sum('valor_prudencial') ?? 0;
+        $valorEquiposAdquisicion = (clone $equiposQuery)->sum('valor_adquisicion') ?? 0;
+
+        $valorComponentesPrudencial = (clone $componentesQuery)->sum('valor_prudencial') ?? 0;
+        $valorComponentesAdquisicion = (clone $componentesQuery)->sum('valor_adquisicion') ?? 0;
+
+        $valorBienesPrudencial = (clone $bienesQuery)->sum('valor_prudencial') ?? 0;
+        $valorBienesAdquisicion = (clone $bienesQuery)->sum('valor_adquisicion') ?? 0;
+
+        $valorVehiculosPrudencial = (clone $vehiculosQuery)->sum('valor_prudencial') ?? 0;
+        $valorVehiculosAdquisicion = (clone $vehiculosQuery)->sum('valor_adquisicion') ?? 0;
+
+        $valorSonidoPrudencial = (clone $sonidoQuery)->sum('valor_prudencial') ?? 0;
+        $valorSonidoAdquisicion = (clone $sonidoQuery)->sum('valor_adquisicion') ?? 0;
+
+        $totalValorPrudencial = $valorEquiposPrudencial + $valorComponentesPrudencial
+            + $valorBienesPrudencial + $valorVehiculosPrudencial + $valorSonidoPrudencial;
+
+        $totalValorAdquisicion = $valorEquiposAdquisicion + $valorComponentesAdquisicion
+            + $valorBienesAdquisicion + $valorVehiculosAdquisicion + $valorSonidoAdquisicion;
 
         /*
         |--------------------------------------------------------------------------
@@ -147,6 +153,10 @@ class DashboardController extends Controller
         $totalUsuarios = User::count();
         $totalEstados = Estado::count();
         $totalSedes = Sede::count();
+        $totalRoles = Role::count();
+        $totalCategoriasBienes = \App\Models\CategoriaBien::count();
+        $totalCategoriasVehiculos = \App\Models\CategoriaVehiculo::count();
+        $totalCategoriasSonido = \App\Models\CategoriaSonido::count();
 
         return view('admin.dashboard', compact(
             'totalEquipos', 'equiposOperativos', 'equiposMantenimiento', 'equiposInoperativos',
@@ -155,9 +165,17 @@ class DashboardController extends Controller
             'totalBienes', 'bienesDisponibles',
             'totalVehiculos', 'vehiculosDisponibles',
             'totalSonido', 'sonidoDisponible',
-            'totalSalidas', 'totalEntradas',
-            'totalUsuarios', 'totalEstados', 'totalSedes',
-            'estados', 'sedes', 'estadoId', 'sedeId', 'esAdmin', 'esAuditor'
+            'totalSalidas', 'salidasPendientes', 'totalEntradas',
+            'totalUsuarios', 'totalEstados', 'totalSedes', 'totalRoles',
+            'totalCategoriasBienes', 'totalCategoriasVehiculos', 'totalCategoriasSonido',
+            'estados', 'sedes', 'estadoId', 'sedeId', 'esAdmin', 'esAuditor',
+            // Valorización
+            'valorEquiposPrudencial', 'valorEquiposAdquisicion',
+            'valorComponentesPrudencial', 'valorComponentesAdquisicion',
+            'valorBienesPrudencial', 'valorBienesAdquisicion',
+            'valorVehiculosPrudencial', 'valorVehiculosAdquisicion',
+            'valorSonidoPrudencial', 'valorSonidoAdquisicion',
+            'totalValorPrudencial', 'totalValorAdquisicion'
         ));
     }
 

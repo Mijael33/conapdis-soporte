@@ -5,12 +5,12 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Services\BitacoraService;
 
 class LoginController extends Controller
 {
     /**
      * Muestra el formulario de login.
-     * Solo accesible mediante la ruta secreta configurada en .env
      */
     public function showLoginForm()
     {
@@ -29,6 +29,16 @@ class LoginController extends Controller
 
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
+
+            BitacoraService::accion(
+                'auth',
+                'login',
+                'Inicio de sesión: ' . Auth::user()->name . ' (' . Auth::user()->email . ')',
+                Auth::user(),
+                ['email' => Auth::user()->email],
+                Auth::user()->email
+            );
+
             return redirect()->intended(route('admin.dashboard'));
         }
 
@@ -42,9 +52,23 @@ class LoginController extends Controller
      */
     public function logout(Request $request)
     {
+        $user = Auth::user();
+
+        if ($user) {
+            BitacoraService::accion(
+                'auth',
+                'logout',
+                'Cierre de sesión: ' . $user->name . ' (' . $user->email . ')',
+                $user,
+                ['email' => $user->email],
+                $user->email
+            );
+        }
+
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
         return redirect()->route('admin.login');
     }
 }

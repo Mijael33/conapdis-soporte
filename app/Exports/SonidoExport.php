@@ -46,6 +46,10 @@ class SonidoExport implements FromCollection, WithHeadings, WithMapping, ShouldA
             'Sede',
             'Estatus',
             'Usuario Asignado',
+            'Cédula',
+            'Cargo',
+            'Valor Prudencial (Bs.)',
+            'Valor Adquisición (Bs.)',
         ];
     }
 
@@ -62,6 +66,10 @@ class SonidoExport implements FromCollection, WithHeadings, WithMapping, ShouldA
             $equipo->sede ? $equipo->sede->nombre_sede : 'N/A',
             $equipo->estatus,
             $equipo->usuario_asignado_nombre,
+            $equipo->usuario_asignado_cedula,
+            $equipo->usuario_asignado_cargo,
+            $equipo->valor_prudencial,
+            $equipo->valor_adquisicion,
         ];
     }
 }

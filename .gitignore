@@ -17,5 +17,21 @@ yarn-error.log
 .DS_Store
 Thumbs.db
 *.log
+
+# Storage que no debe ir al repo
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/storage/logs/*
+!/storage/framework/cache/.gitignore
+!/storage/framework/sessions/.gitignore
+!/storage/framework/views/.gitignore
+!/storage/logs/.gitignore
+
+# Importaciones
 /storage/app/public/importaciones/*
 !/storage/app/public/importaciones/.gitkeep
+
+# Archivos auxiliares locales
+/estructura_proyecto.txt
+/generar_estructura.php

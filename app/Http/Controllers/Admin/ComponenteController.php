@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use App\Traits\FiltroSedeTrait;
 use App\Services\ImportacionService;
+use App\Services\BitacoraService;
 use App\Imports\ComponentesImport;
 use App\Exports\ComponentesExport;
 use App\Exports\PlantillaComponentesExport;
@@ -36,12 +37,8 @@ class ComponenteController extends Controller
             $query->whereIn('sede_id', $sedeIds);
         }
 
-        if ($request->categoria_id) {
-            $query->where('categoria_componente_id', $request->categoria_id);
-        }
-        if ($request->estatus) {
-            $query->where('estatus', $request->estatus);
-        }
+        if ($request->categoria_id) $query->where('categoria_componente_id', $request->categoria_id);
+        if ($request->estatus) $query->where('estatus', $request->estatus);
         if ($request->search) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
@@ -60,10 +57,9 @@ class ComponenteController extends Controller
     public function show($id)
     {
         $componente = Componente::with([
-            'categoria',
-            'sede.estado',
-            'equipoActual.departamento.sede.estado',
-            'equipos.departamento.sede.estado',
+            'categoria', 'sede.estado',
+            'equipoActual.sede.estado',
+            'equipos.sede.estado',
             'bitacoras.usuario'
         ])->findOrFail($id);
 
@@ -85,9 +81,19 @@ class ComponenteController extends Controller
             'modelo' => 'required|string|max:100',
             'serial_unico' => 'required|string|max:150|unique:componentes',
             'sede_id' => 'required|exists:sedes,id',
+            'estatus' => 'nullable|in:Disponible,Instalado,En Revisión,Desincorporado',
             'caracteristicas_tecnicas' => 'nullable|string',
+            'valor_prudencial' => 'nullable|numeric|min:0',
+            'valor_adquisicion' => 'nullable|numeric|min:0',
             'observaciones' => 'nullable|string',
         ]);
+
+        if (empty($validated['valor_prudencial']) && empty($validated['valor_adquisicion'])) {
+            return back()->with('error', 'Debe ingresar al menos uno de los dos valores: Valor Prudencial o Valor de Adquisición.')->withInput();
+        }
+
+        // Default estatus
+        $validated['estatus'] = $validated['estatus'] ?? 'Disponible';
 
         if ($request->filled('caracteristicas_tecnicas')) {
             $decoded = json_decode($request->caracteristicas_tecnicas, true);
@@ -108,6 +114,8 @@ class ComponenteController extends Controller
                 'datos_nuevos' => $componente->toArray(),
                 'fecha_registro' => now(),
             ]);
+
+            BitacoraService::crear('componentes', $componente, 'Componente creado: ' . $componente->serial_unico . ' (' . $componente->marca . ' ' . $componente->modelo . ')', $componente->serial_unico);
 
             DB::commit();
             return redirect()->route('admin.componentes.index')->with('success', 'Componente creado exitosamente.');
@@ -137,8 +145,14 @@ class ComponenteController extends Controller
             'estatus' => 'required|in:Disponible,Instalado,En Revisión,Desincorporado',
             'sede_id' => 'required|exists:sedes,id',
             'caracteristicas_tecnicas' => 'nullable|string',
+            'valor_prudencial' => 'nullable|numeric|min:0',
+            'valor_adquisicion' => 'nullable|numeric|min:0',
             'observaciones' => 'nullable|string',
         ]);
+
+        if (empty($validated['valor_prudencial']) && empty($validated['valor_adquisicion'])) {
+            return back()->with('error', 'Debe ingresar al menos uno de los dos valores: Valor Prudencial o Valor de Adquisición.')->withInput();
+        }
 
         if ($request->filled('caracteristicas_tecnicas')) {
             $decoded = json_decode($request->caracteristicas_tecnicas, true);
@@ -169,6 +183,8 @@ class ComponenteController extends Controller
                 'fecha_registro' => now(),
             ]);
 
+            BitacoraService::editar('componentes', $componente, $datosAnteriores, $descripcion, $componente->serial_unico);
+
             DB::commit();
             return redirect()->route('admin.componentes.index')->with('success', 'Componente actualizado exitosamente.');
         } catch (\Exception $e) {
@@ -193,6 +209,8 @@ class ComponenteController extends Controller
                 'fecha_registro' => now(),
             ]);
 
+            BitacoraService::eliminar('componentes', $componente, 'Componente eliminado: ' . $componente->serial_unico, $componente->serial_unico);
+
             $componente->delete();
 
             DB::commit();
@@ -203,12 +221,6 @@ class ComponenteController extends Controller
         }
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | IMPORTACIÓN Y EXPORTACIÓN
-    |--------------------------------------------------------------------------
-    */
-
     public function importar()
     {
         return view('admin.componentes.importar');
@@ -216,22 +228,14 @@ class ComponenteController extends Controller
 
     public function procesarImportacion(Request $request)
     {
-        $request->validate([
-            'archivo' => 'required|file|mimes:xlsx,xls,csv|max:20480',
-        ]);
-
+        $request->validate(['archivo' => 'required|file|mimes:xlsx,xls,csv|max:20480']);
         try {
             $service = new ImportacionService('componentes');
             $import = new ComponentesImport($service);
-
             Excel::import($import, $request->file('archivo'));
-
             $resumen = $service->generarResumen();
-
-            return redirect()->route('admin.componentes.index')
-                ->with('importacion_resumen', $resumen)
-                ->with('success', 'Componentes importados exitosamente.');
-
+            BitacoraService::accion('componentes', 'importar', 'Importación masiva de componentes: ' . $resumen['importados'] . ' importados, ' . $resumen['fallidos'] . ' fallidos', null, $resumen);
+            return redirect()->route('admin.componentes.index')->with('importacion_resumen', $resumen)->with('success', 'Componentes importados exitosamente.');
         } catch (\Exception $e) {
             return back()->with('error', 'Error crítico en la importación: ' . $e->getMessage());
         }
@@ -260,7 +264,6 @@ class ComponenteController extends Controller
         $estadoId = session('filtro_estado_id');
 
         $query = Componente::with(['categoria', 'sede.estado', 'equipoActual']);
-
         if (!$esAdmin && !$esAuditor) {
             $query->where('sede_id', $user->sede_id);
         } elseif ($sedeId) {
@@ -271,7 +274,6 @@ class ComponenteController extends Controller
         }
 
         $componentes = $query->orderBy('serial_unico')->get();
-
         $pdf = Pdf::loadView('admin.componentes.pdf', compact('componentes'));
         $pdf->setPaper('letter', 'landscape');
         return $pdf->download('componentes-' . date('Y-m-d') . '.pdf');
@@ -282,30 +284,18 @@ class ComponenteController extends Controller
         return Excel::download(new PlantillaComponentesExport, 'plantilla-componentes.xlsx');
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | PDF INDIVIDUAL Y PEGATINA
-    |--------------------------------------------------------------------------
-    */
-
     public function pdfIndividual($id)
     {
         $componente = Componente::with(['categoria', 'sede.estado', 'equipoActual'])->findOrFail($id);
-
         $pdf = Pdf::loadView('admin.componentes.pdf_individual', compact('componente'));
         $pdf->setPaper('letter', 'portrait');
-        $pdf->setOptions([
-            'isRemoteEnabled' => true,
-            'isHtml5ParserEnabled' => true,
-        ]);
-
+        $pdf->setOptions(['isRemoteEnabled' => true, 'isHtml5ParserEnabled' => true]);
         return $pdf->download('Ficha-Componente-' . $componente->serial_unico . '.pdf');
     }
 
     public function pdfPegatina($id)
     {
         $componente = Componente::with(['categoria', 'sede.estado'])->findOrFail($id);
-    
         $pdf = Pdf::loadView('admin.componentes.pdf_pegatina', compact('componente'));
         $pdf->setPaper([0, 0, 90 * 2.83464567, 45 * 2.83464567]);
         $pdf->setOptions([
@@ -315,7 +305,6 @@ class ComponenteController extends Controller
             'defaultFont' => 'DejaVu Sans',
             'dpi' => 96,
         ]);
-    
         return $pdf->download('Pegatina-' . $componente->serial_unico . '.pdf');
     }
 }

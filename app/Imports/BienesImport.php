@@ -8,15 +8,16 @@ use App\Models\Sede;
 use App\Models\Estado;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
-use Maatwebsite\Excel\Concerns\WithBatchInserts;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
 use Illuminate\Support\Facades\Auth;
 
-class BienesImport implements ToModel, WithHeadingRow, WithBatchInserts, WithChunkReading, SkipsEmptyRows
+class BienesImport implements ToModel, WithHeadingRow, WithChunkReading, SkipsEmptyRows
 {
     protected $service;
     protected $filaActual = 1;
+
+    protected array $codigosEnArchivo = [];
 
     public function __construct($service = null)
     {
@@ -27,7 +28,6 @@ class BienesImport implements ToModel, WithHeadingRow, WithBatchInserts, WithChu
     {
         $this->filaActual++;
 
-        // Saltar filas totalmente vacías
         if (empty($row['codigo_inventario']) && empty($row['descripcion'])) {
             return null;
         }
@@ -35,10 +35,6 @@ class BienesImport implements ToModel, WithHeadingRow, WithBatchInserts, WithChu
         try {
             $user = Auth::user();
             $esAdmin = $user->hasRole('Administrador');
-
-            // =====================================================
-            // VALIDACIONES MANUALES (para capturar errores sin detener)
-            // =====================================================
 
             if (empty($row['codigo_inventario'])) {
                 throw new \Exception('El campo "codigo_inventario" es obligatorio');
@@ -56,33 +52,23 @@ class BienesImport implements ToModel, WithHeadingRow, WithBatchInserts, WithChu
                 throw new \Exception('El campo "sede" es obligatorio');
             }
 
-            // =====================================================
-            // VERIFICAR DUPLICADOS
-            // =====================================================
+            $codigoTrim = trim($row['codigo_inventario']);
 
-            $existe = BienNacional::where(
-                'codigo_inventario',
-                trim($row['codigo_inventario'])
-            )->exists();
-
-            if ($existe) {
+            if (isset($this->codigosEnArchivo[$codigoTrim])) {
                 throw new \Exception(
-                    'El código "' . $row['codigo_inventario'] . '" ya existe en el sistema'
+                    'El código "' . $codigoTrim . '" está DUPLICADO dentro del mismo archivo (ya apareció en la fila ' .
+                    $this->codigosEnArchivo[$codigoTrim] . ')'
                 );
             }
 
-            // =====================================================
-            // OBTENER O CREAR CATEGORÍA
-            // =====================================================
+            if (BienNacional::where('codigo_inventario', $codigoTrim)->exists()) {
+                throw new \Exception('El código "' . $codigoTrim . '" ya existe en la base de datos');
+            }
 
             $categoria = CategoriaBien::firstOrCreate(
                 ['nombre' => trim($row['categoria'])],
                 ['descripcion' => 'Creada automáticamente al importar']
             );
-
-            // =====================================================
-            // OBTENER O CREAR SEDE
-            // =====================================================
 
             $sede = Sede::where('nombre_sede', trim($row['sede']))->first();
 
@@ -98,22 +84,15 @@ class BienesImport implements ToModel, WithHeadingRow, WithBatchInserts, WithChu
                 }
             }
 
-            // =====================================================
-            // VALIDAR PERMISO POR SEDE
-            // =====================================================
-
             if (!$esAdmin && $sede && $sede->id !== $user->sede_id) {
-                throw new \Exception(
-                    'No tiene permiso para importar en la sede: ' . $row['sede']
-                );
+                throw new \Exception('No tiene permiso para importar en la sede: ' . $row['sede']);
             }
 
-            // =====================================================
-            // CREAR BIEN
-            // =====================================================
+            $valorPrudencial = $this->parsearValor($row['valor_prudencial'] ?? null);
+            $valorAdquisicion = $this->parsearValor($row['valor_adquisicion'] ?? null);
 
             $bien = new BienNacional([
-                'codigo_inventario' => trim($row['codigo_inventario']),
+                'codigo_inventario' => $codigoTrim,
                 'categoria_bien_id' => $categoria ? $categoria->id : null,
                 'sede_id' => $sede ? $sede->id : ($esAdmin ? null : $user->sede_id),
                 'descripcion' => trim($row['descripcion']),
@@ -126,12 +105,14 @@ class BienesImport implements ToModel, WithHeadingRow, WithBatchInserts, WithChu
                 'usuario_asignado_nombre' => isset($row['usuario_asignado']) ? trim($row['usuario_asignado']) : null,
                 'usuario_asignado_cedula' => isset($row['cedula_asignado']) ? trim($row['cedula_asignado']) : null,
                 'usuario_asignado_cargo' => isset($row['cargo_asignado']) ? trim($row['cargo_asignado']) : null,
-                'valor_adquisicion' => $row['valor_adquisicion'] ?? null,
+                'valor_prudencial' => $valorPrudencial,
+                'valor_adquisicion' => $valorAdquisicion,
                 'fecha_adquisicion' => $row['fecha_adquisicion'] ?? null,
                 'observaciones' => isset($row['observaciones']) ? trim($row['observaciones']) : null,
             ]);
 
-            // Registrar éxito
+            $this->codigosEnArchivo[$codigoTrim] = $this->filaActual;
+
             if ($this->service) {
                 $this->service->registrarExito();
             }
@@ -139,7 +120,6 @@ class BienesImport implements ToModel, WithHeadingRow, WithBatchInserts, WithChu
             return $bien;
 
         } catch (\Exception $e) {
-            // Registrar error sin detener el proceso
             if ($this->service) {
                 $this->service->registrarError(
                     $this->filaActual,
@@ -155,14 +135,20 @@ class BienesImport implements ToModel, WithHeadingRow, WithBatchInserts, WithChu
         }
     }
 
-    /**
-     * Normaliza el estatus a un valor válido.
-     */
+    private function parsearValor($valor)
+    {
+        if ($valor === null || $valor === '') return null;
+        if (is_numeric($valor)) return $valor;
+
+        $limpio = str_replace('.', '', (string) $valor);
+        $limpio = str_replace(',', '.', $limpio);
+
+        return is_numeric($limpio) ? $limpio : null;
+    }
+
     private function normalizarEstatus($estatus)
     {
-        if (empty($estatus)) {
-            return 'Disponible';
-        }
+        if (empty($estatus)) return 'Disponible';
 
         $estatus = mb_strtolower(trim($estatus));
 
@@ -178,11 +164,6 @@ class BienesImport implements ToModel, WithHeadingRow, WithBatchInserts, WithChu
         ];
 
         return $mapa[$estatus] ?? 'Disponible';
-    }
-
-    public function batchSize(): int
-    {
-        return 500;
     }
 
     public function chunkSize(): int

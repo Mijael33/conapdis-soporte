@@ -43,8 +43,8 @@
         }
         .movimientos-table tr:nth-child(even) { background: #f8fafc; }
 
-        .badge-salida { background: #fef2f2; color: #ef172f; padding: 2px 5px; border-radius: 10px; font-weight: 600; }
-        .badge-entrada { background: #ecfdf5; color: #4c7f36; padding: 2px 5px; border-radius: 10px; font-weight: 600; }
+        .badge-pendiente { background: #fef3c7; color: #a16207; padding: 2px 5px; border-radius: 10px; font-weight: 600; }
+        .badge-completado { background: #dcfce7; color: #166534; padding: 2px 5px; border-radius: 10px; font-weight: 600; }
 
         .pie {
             margin-top: 15px;
@@ -61,63 +61,54 @@
     @include('pdf.partials.encabezado')
 
     <div class="titulo-doc">
-        Listado de Movimientos de Bienes
+        Listado de Movimientos de Entrada/Salida
     </div>
 
     <div class="info-doc">
-        Total: <strong>{{ $registros->count() }}</strong> movimientos | Fecha: {{ date('d/m/Y H:i') }}
+        Total: <strong>{{ $registros->count() }}</strong> movimientos | Fecha: {{ \App\Helpers\FechaHelper::formatear(now()) }}
     </div>
 
     <table class="movimientos-table">
         <thead>
             <tr>
-                <th>ID</th>
-                <th>Tipo</th>
+                <th>N°</th>
                 <th>Bien</th>
-                <th>Código</th>
-                <th>Descripción</th>
                 <th>Sede</th>
-                <th>Estado</th>
-                <th>Fecha</th>
-                <th>Retira/Entrega</th>
-                <th>Seguridad</th>
+                <th>Salida</th>
+                <th>Retira</th>
+                <th>Entrada</th>
+                <th>Entrega</th>
+                <th>Estatus</th>
+                <th>Duración</th>
             </tr>
         </thead>
         <tbody>
             @forelse($registros as $reg)
             <tr>
-                <td>{{ $reg->id }}</td>
+                <td>{{ $reg->numero_comprobante }}</td>
                 <td>
-                    @if($reg->tipo == 'Salida')
-                        <span class="badge-salida">SALIDA</span>
+                    <strong>{{ $reg->bien_codigo }}</strong><br>
+                    <small>{{ Str::limit($reg->bien_descripcion, 20) }}</small>
+                </td>
+                <td>{{ Str::limit($reg->sede->nombre_sede ?? 'N/A', 15) }}</td>
+                <td>{{ \App\Helpers\FechaHelper::formatear($reg->fecha_hora_salida) }}</td>
+                <td>{{ Str::limit($reg->salida_retira_nombre ?? '-', 15) }}</td>
+                <td>{{ \App\Helpers\FechaHelper::formatear($reg->fecha_hora_entrada) }}</td>
+                <td>{{ Str::limit($reg->entrada_recibe_nombre ?? '-', 15) }}</td>
+                <td>
+                    @if($reg->estatus == 'Pendiente')
+                        <span class="badge-pendiente">PENDIENTE</span>
                     @else
-                        <span class="badge-entrada">ENTRADA</span>
+                        <span class="badge-completado">COMPLETADO</span>
                     @endif
                 </td>
-                <td>{{ $reg->bien_tipo }}</td>
-                <td>{{ $reg->codigo_inventario }}</td>
-                <td>{{ Str::limit($reg->descripcion_bien, 25) }}</td>
-                <td>{{ $reg->sede->nombre_sede ?? 'N/A' }}</td>
-                <td>{{ $reg->sede->estado->nombre ?? 'N/A' }}</td>
-                <td>
-                    @if($reg->tipo == 'Salida')
-                        {{ $reg->fecha_hora_salida ? $reg->fecha_hora_salida->format('d/m/Y H:i') : 'N/A' }}
-                    @else
-                        {{ $reg->fecha_hora_entrada ? $reg->fecha_hora_entrada->format('d/m/Y H:i') : 'N/A' }}
-                    @endif
-                </td>
-                <td>{{ $reg->persona_retira_nombre ?? 'N/A' }}</td>
-                <td>
-                    @if($reg->tipo == 'Salida')
-                        {{ $reg->seguridad_salida_nombre ?? 'N/A' }}
-                    @else
-                        {{ $reg->seguridad_entrada_nombre ?? 'N/A' }}
-                    @endif
-                </td>
+                <td>{{ $reg->duracion ?? '-' }}</td>
             </tr>
             @empty
             <tr>
-                <td colspan="10" style="text-align: center; color: #94a3b8; padding: 15px;">No hay movimientos registrados</td>
+                <td colspan="9" style="text-align: center; color: #94a3b8; padding: 15px;">
+                    No hay movimientos registrados
+                </td>
             </tr>
             @endforelse
         </tbody>
@@ -125,7 +116,7 @@
 
     <div class="pie">
         Documento generado automáticamente por el Sistema de Gestión de Bienes CONAPDIS<br>
-        Fecha de emisión: {{ date('d/m/Y H:i:s') }}
+        Fecha de emisión: {{ \App\Helpers\FechaHelper::formatear(now()) }}
     </div>
 
 </body>
