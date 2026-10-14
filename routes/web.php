@@ -22,15 +22,42 @@ use App\Http\Controllers\Admin\EquipoSonidoController;
 use App\Http\Controllers\Admin\EntradaSalidaController;
 use App\Http\Controllers\Admin\ValorizacionController;
 
+/*
+|--------------------------------------------------------------------------
+| REDIRECCIÓN RAÍZ → LOGIN OCULTO
+|--------------------------------------------------------------------------
+*/
+Route::get('/', function () {
+    if (auth()->check()) {
+        return redirect()->route('admin.dashboard');
+    }
+    return redirect()->route('admin.login');
+});
+
+/*
+|--------------------------------------------------------------------------
+| RUTAS OCULTAS (404)
+|--------------------------------------------------------------------------
+*/
 Route::get('/login', function () { abort(404); });
 Route::get('/admin', function () { abort(404); });
 
+/*
+|--------------------------------------------------------------------------
+| LOGIN OCULTO
+|--------------------------------------------------------------------------
+*/
 Route::prefix('acceso')->name('admin.')->group(function () {
     Route::get('/', [LoginController::class, 'showLoginForm'])->name('login');
     Route::post('/', [LoginController::class, 'login'])->name('login.submit');
     Route::post('/salir', [LoginController::class, 'logout'])->name('logout');
 });
 
+/*
+|--------------------------------------------------------------------------
+| PANEL ADMINISTRATIVO (requiere autenticación)
+|--------------------------------------------------------------------------
+*/
 Route::prefix('panel')->name('admin.')->middleware(['auth', 'filtro.sede'])->group(function () {
 
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
@@ -41,10 +68,36 @@ Route::prefix('panel')->name('admin.')->middleware(['auth', 'filtro.sede'])->gro
     | TECNOLOGÍA
     |--------------------------------------------------------------------------
     */
-    Route::resource('tipos-equipos', TipoEquipoController::class)->middleware('permission:tecnologia.tipos-equipos.ver');
-    Route::resource('categorias-componentes', CategoriaComponenteController::class)->middleware('permission:tecnologia.categorias-componentes.ver');
 
-    // EQUIPOS
+    // TIPOS DE EQUIPOS
+    Route::resource('tipos-equipos', TipoEquipoController::class)
+        ->only(['create', 'store'])
+        ->middleware('permission:tecnologia.tipos-equipos.crear');
+    Route::resource('tipos-equipos', TipoEquipoController::class)
+        ->only(['edit', 'update'])
+        ->middleware('permission:tecnologia.tipos-equipos.editar');
+    Route::resource('tipos-equipos', TipoEquipoController::class)
+        ->only(['destroy'])
+        ->middleware('permission:tecnologia.tipos-equipos.eliminar');
+    Route::resource('tipos-equipos', TipoEquipoController::class)
+        ->only(['index', 'show'])
+        ->middleware('permission:tecnologia.tipos-equipos.ver');
+
+    // CATEGORÍAS DE COMPONENTES
+    Route::resource('categorias-componentes', CategoriaComponenteController::class)
+        ->only(['create', 'store'])
+        ->middleware('permission:tecnologia.categorias-componentes.crear');
+    Route::resource('categorias-componentes', CategoriaComponenteController::class)
+        ->only(['edit', 'update'])
+        ->middleware('permission:tecnologia.categorias-componentes.editar');
+    Route::resource('categorias-componentes', CategoriaComponenteController::class)
+        ->only(['destroy'])
+        ->middleware('permission:tecnologia.categorias-componentes.eliminar');
+    Route::resource('categorias-componentes', CategoriaComponenteController::class)
+        ->only(['index', 'show'])
+        ->middleware('permission:tecnologia.categorias-componentes.ver');
+
+    // EQUIPOS — rutas específicas primero
     Route::get('equipos/importar', [EquipoController::class, 'importar'])->name('equipos.importar')->middleware('permission:tecnologia.equipos.importar');
     Route::post('equipos/importar', [EquipoController::class, 'procesarImportacion'])->name('equipos.procesar-importacion')->middleware('permission:tecnologia.equipos.importar');
     Route::get('equipos/descargar-errores/{archivo}', [EquipoController::class, 'descargarErrores'])->name('equipos.descargar-errores')->middleware('permission:tecnologia.equipos.importar');
@@ -57,7 +110,19 @@ Route::prefix('panel')->name('admin.')->middleware(['auth', 'filtro.sede'])->gro
     Route::post('equipos/{equipo}/componente', [EquipoController::class, 'storeComponente'])->name('equipos.store-componente')->middleware('permission:tecnologia.equipos.editar');
     Route::delete('equipos/{equipo}/componente/{componente}', [EquipoController::class, 'removerComponente'])->name('equipos.remover-componente')->middleware('permission:tecnologia.equipos.editar');
     Route::get('equipos/so/{so}/password', [EquipoController::class, 'verPassword'])->name('equipos.ver-password')->middleware('permission:tecnologia.equipos.ver');
-    Route::resource('equipos', EquipoController::class)->middleware('permission:tecnologia.equipos.ver');
+
+    Route::resource('equipos', EquipoController::class)
+        ->only(['create', 'store'])
+        ->middleware('permission:tecnologia.equipos.crear');
+    Route::resource('equipos', EquipoController::class)
+        ->only(['edit', 'update'])
+        ->middleware('permission:tecnologia.equipos.editar');
+    Route::resource('equipos', EquipoController::class)
+        ->only(['destroy'])
+        ->middleware('permission:tecnologia.equipos.eliminar');
+    Route::resource('equipos', EquipoController::class)
+        ->only(['index', 'show'])
+        ->middleware('permission:tecnologia.equipos.ver');
 
     // COMPONENTES
     Route::get('componentes/importar', [ComponenteController::class, 'importar'])->name('componentes.importar')->middleware('permission:tecnologia.componentes.importar');
@@ -68,17 +133,51 @@ Route::prefix('panel')->name('admin.')->middleware(['auth', 'filtro.sede'])->gro
     Route::get('componentes/plantilla', [ComponenteController::class, 'descargarPlantilla'])->name('componentes.plantilla')->middleware('permission:tecnologia.componentes.importar');
     Route::get('componentes/{componente}/pdf', [ComponenteController::class, 'pdfIndividual'])->name('componentes.pdf')->middleware('permission:tecnologia.componentes.ver');
     Route::get('componentes/{componente}/pegatina', [ComponenteController::class, 'pdfPegatina'])->name('componentes.pegatina')->middleware('permission:tecnologia.componentes.ver');
-    Route::resource('componentes', ComponenteController::class)->middleware('permission:tecnologia.componentes.ver');
+
+    Route::resource('componentes', ComponenteController::class)
+        ->only(['create', 'store'])
+        ->middleware('permission:tecnologia.componentes.crear');
+    Route::resource('componentes', ComponenteController::class)
+        ->only(['edit', 'update'])
+        ->middleware('permission:tecnologia.componentes.editar');
+    Route::resource('componentes', ComponenteController::class)
+        ->only(['destroy'])
+        ->middleware('permission:tecnologia.componentes.eliminar');
+    Route::resource('componentes', ComponenteController::class)
+        ->only(['index', 'show'])
+        ->middleware('permission:tecnologia.componentes.ver');
 
     // ÓRDENES
-    Route::resource('ordenes', OrdenServicioController::class)->middleware('permission:tecnologia.ordenes.ver');
+    Route::resource('ordenes', OrdenServicioController::class)
+        ->only(['create', 'store'])
+        ->middleware('permission:tecnologia.ordenes.crear');
+    Route::resource('ordenes', OrdenServicioController::class)
+        ->only(['edit', 'update'])
+        ->middleware('permission:tecnologia.ordenes.editar');
+    Route::resource('ordenes', OrdenServicioController::class)
+        ->only(['destroy'])
+        ->middleware('permission:tecnologia.ordenes.eliminar');
+    Route::resource('ordenes', OrdenServicioController::class)
+        ->only(['index', 'show'])
+        ->middleware('permission:tecnologia.ordenes.ver');
 
     /*
     |--------------------------------------------------------------------------
     | BIENES NACIONALES
     |--------------------------------------------------------------------------
     */
-    Route::resource('bienes-categorias', CategoriaBienController::class)->middleware('permission:bienes.categorias.ver');
+    Route::resource('bienes-categorias', CategoriaBienController::class)
+        ->only(['create', 'store'])
+        ->middleware('permission:bienes.categorias.crear');
+    Route::resource('bienes-categorias', CategoriaBienController::class)
+        ->only(['edit', 'update'])
+        ->middleware('permission:bienes.categorias.editar');
+    Route::resource('bienes-categorias', CategoriaBienController::class)
+        ->only(['destroy'])
+        ->middleware('permission:bienes.categorias.eliminar');
+    Route::resource('bienes-categorias', CategoriaBienController::class)
+        ->only(['index', 'show'])
+        ->middleware('permission:bienes.categorias.ver');
 
     Route::get('bienes/importar', [BienNacionalController::class, 'importar'])->name('bienes.importar')->middleware('permission:bienes.importar');
     Route::post('bienes/importar', [BienNacionalController::class, 'procesarImportacion'])->name('bienes.procesar-importacion')->middleware('permission:bienes.importar');
@@ -88,14 +187,37 @@ Route::prefix('panel')->name('admin.')->middleware(['auth', 'filtro.sede'])->gro
     Route::get('bienes/plantilla', [BienNacionalController::class, 'descargarPlantilla'])->name('bienes.plantilla')->middleware('permission:bienes.importar');
     Route::get('bienes/{bien}/pdf', [BienNacionalController::class, 'pdfIndividual'])->name('bienes.pdf')->middleware('permission:bienes.ver');
     Route::get('bienes/{bien}/pegatina', [BienNacionalController::class, 'pdfPegatina'])->name('bienes.pegatina')->middleware('permission:bienes.ver');
-    Route::resource('bienes', BienNacionalController::class)->middleware('permission:bienes.ver');
+
+    Route::resource('bienes', BienNacionalController::class)
+        ->only(['create', 'store'])
+        ->middleware('permission:bienes.crear');
+    Route::resource('bienes', BienNacionalController::class)
+        ->only(['edit', 'update'])
+        ->middleware('permission:bienes.editar');
+    Route::resource('bienes', BienNacionalController::class)
+        ->only(['destroy'])
+        ->middleware('permission:bienes.eliminar');
+    Route::resource('bienes', BienNacionalController::class)
+        ->only(['index', 'show'])
+        ->middleware('permission:bienes.ver');
 
     /*
     |--------------------------------------------------------------------------
     | VEHÍCULOS
     |--------------------------------------------------------------------------
     */
-    Route::resource('vehiculos-categorias', CategoriaVehiculoController::class)->middleware('permission:vehiculos.categorias.ver');
+    Route::resource('vehiculos-categorias', CategoriaVehiculoController::class)
+        ->only(['create', 'store'])
+        ->middleware('permission:vehiculos.categorias.crear');
+    Route::resource('vehiculos-categorias', CategoriaVehiculoController::class)
+        ->only(['edit', 'update'])
+        ->middleware('permission:vehiculos.categorias.editar');
+    Route::resource('vehiculos-categorias', CategoriaVehiculoController::class)
+        ->only(['destroy'])
+        ->middleware('permission:vehiculos.categorias.eliminar');
+    Route::resource('vehiculos-categorias', CategoriaVehiculoController::class)
+        ->only(['index', 'show'])
+        ->middleware('permission:vehiculos.categorias.ver');
 
     Route::get('vehiculos/importar', [VehiculoController::class, 'importar'])->name('vehiculos.importar')->middleware('permission:vehiculos.importar');
     Route::post('vehiculos/importar', [VehiculoController::class, 'procesarImportacion'])->name('vehiculos.procesar-importacion')->middleware('permission:vehiculos.importar');
@@ -105,14 +227,37 @@ Route::prefix('panel')->name('admin.')->middleware(['auth', 'filtro.sede'])->gro
     Route::get('vehiculos/plantilla', [VehiculoController::class, 'descargarPlantilla'])->name('vehiculos.plantilla')->middleware('permission:vehiculos.importar');
     Route::get('vehiculos/{vehiculo}/pdf', [VehiculoController::class, 'pdfIndividual'])->name('vehiculos.pdf')->middleware('permission:vehiculos.ver');
     Route::get('vehiculos/{vehiculo}/pegatina', [VehiculoController::class, 'pdfPegatina'])->name('vehiculos.pegatina')->middleware('permission:vehiculos.ver');
-    Route::resource('vehiculos', VehiculoController::class)->middleware('permission:vehiculos.ver');
+
+    Route::resource('vehiculos', VehiculoController::class)
+        ->only(['create', 'store'])
+        ->middleware('permission:vehiculos.crear');
+    Route::resource('vehiculos', VehiculoController::class)
+        ->only(['edit', 'update'])
+        ->middleware('permission:vehiculos.editar');
+    Route::resource('vehiculos', VehiculoController::class)
+        ->only(['destroy'])
+        ->middleware('permission:vehiculos.eliminar');
+    Route::resource('vehiculos', VehiculoController::class)
+        ->only(['index', 'show'])
+        ->middleware('permission:vehiculos.ver');
 
     /*
     |--------------------------------------------------------------------------
     | EQUIPOS DE SONIDO
     |--------------------------------------------------------------------------
     */
-    Route::resource('sonido-categorias', CategoriaSonidoController::class)->middleware('permission:sonido.categorias.ver');
+    Route::resource('sonido-categorias', CategoriaSonidoController::class)
+        ->only(['create', 'store'])
+        ->middleware('permission:sonido.categorias.crear');
+    Route::resource('sonido-categorias', CategoriaSonidoController::class)
+        ->only(['edit', 'update'])
+        ->middleware('permission:sonido.categorias.editar');
+    Route::resource('sonido-categorias', CategoriaSonidoController::class)
+        ->only(['destroy'])
+        ->middleware('permission:sonido.categorias.eliminar');
+    Route::resource('sonido-categorias', CategoriaSonidoController::class)
+        ->only(['index', 'show'])
+        ->middleware('permission:sonido.categorias.ver');
 
     Route::get('sonido/importar', [EquipoSonidoController::class, 'importar'])->name('sonido.importar')->middleware('permission:sonido.importar');
     Route::post('sonido/importar', [EquipoSonidoController::class, 'procesarImportacion'])->name('sonido.procesar-importacion')->middleware('permission:sonido.importar');
@@ -122,7 +267,19 @@ Route::prefix('panel')->name('admin.')->middleware(['auth', 'filtro.sede'])->gro
     Route::get('sonido/plantilla', [EquipoSonidoController::class, 'descargarPlantilla'])->name('sonido.plantilla')->middleware('permission:sonido.importar');
     Route::get('sonido/{equipo}/pdf', [EquipoSonidoController::class, 'pdfIndividual'])->name('sonido.pdf')->middleware('permission:sonido.ver');
     Route::get('sonido/{equipo}/pegatina', [EquipoSonidoController::class, 'pdfPegatina'])->name('sonido.pegatina')->middleware('permission:sonido.ver');
-    Route::resource('sonido', EquipoSonidoController::class)->middleware('permission:sonido.ver');
+
+    Route::resource('sonido', EquipoSonidoController::class)
+        ->only(['create', 'store'])
+        ->middleware('permission:sonido.crear');
+    Route::resource('sonido', EquipoSonidoController::class)
+        ->only(['edit', 'update'])
+        ->middleware('permission:sonido.editar');
+    Route::resource('sonido', EquipoSonidoController::class)
+        ->only(['destroy'])
+        ->middleware('permission:sonido.eliminar');
+    Route::resource('sonido', EquipoSonidoController::class)
+        ->only(['index', 'show'])
+        ->middleware('permission:sonido.ver');
 
     /*
     |--------------------------------------------------------------------------
@@ -216,16 +373,50 @@ Route::prefix('panel')->name('admin.')->middleware(['auth', 'filtro.sede'])->gro
 
     /*
     |--------------------------------------------------------------------------
-    | CATÁLOGOS BASE: ESTADOS (con sedes anidadas)
+    | CATÁLOGOS BASE: ESTADOS
     |--------------------------------------------------------------------------
     */
-    Route::resource('estados', EstadoController::class)->middleware('permission:estados.ver');
+    Route::resource('estados', EstadoController::class)
+        ->only(['create', 'store'])
+        ->middleware('permission:estados.crear');
+    Route::resource('estados', EstadoController::class)
+        ->only(['edit', 'update'])
+        ->middleware('permission:estados.editar');
+    Route::resource('estados', EstadoController::class)
+        ->only(['destroy'])
+        ->middleware('permission:estados.eliminar');
+    Route::resource('estados', EstadoController::class)
+        ->only(['index', 'show'])
+        ->middleware('permission:estados.ver');
 
     /*
     |--------------------------------------------------------------------------
     | USUARIOS Y ROLES
     |--------------------------------------------------------------------------
     */
-    Route::resource('usuarios', UsuarioController::class)->middleware('permission:usuarios.ver');
-    Route::resource('roles', RoleController::class)->middleware('permission:roles.ver');
+    Route::resource('usuarios', UsuarioController::class)
+        ->only(['create', 'store'])
+        ->middleware('permission:usuarios.crear');
+    Route::resource('usuarios', UsuarioController::class)
+        ->only(['edit', 'update'])
+        ->middleware('permission:usuarios.editar');
+    Route::resource('usuarios', UsuarioController::class)
+        ->only(['destroy'])
+        ->middleware('permission:usuarios.eliminar');
+    Route::resource('usuarios', UsuarioController::class)
+        ->only(['index', 'show'])
+        ->middleware('permission:usuarios.ver');
+
+    Route::resource('roles', RoleController::class)
+        ->only(['create', 'store'])
+        ->middleware('permission:roles.crear');
+    Route::resource('roles', RoleController::class)
+        ->only(['edit', 'update'])
+        ->middleware('permission:roles.editar');
+    Route::resource('roles', RoleController::class)
+        ->only(['destroy'])
+        ->middleware('permission:roles.eliminar');
+    Route::resource('roles', RoleController::class)
+        ->only(['index', 'show'])
+        ->middleware('permission:roles.ver');
 });

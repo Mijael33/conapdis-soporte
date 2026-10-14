@@ -10,9 +10,6 @@ use Spatie\Permission\Models\Permission;
 
 class RoleController extends Controller
 {
-    /**
-     * Nombre legible de cada módulo (guardado en columna `modulo` de la BD).
-     */
     protected function nombreModulo($moduloKey)
     {
         return [
@@ -28,37 +25,23 @@ class RoleController extends Controller
             'estados' => 'Catálogos Base',
             'usuarios' => 'Usuarios',
             'roles' => 'Roles y Permisos',
+            'acceso_nacional' => 'Acceso Nacional',
         ][$moduloKey] ?? ucfirst(str_replace('_', ' ', $moduloKey));
     }
 
-    /**
-     * Nombre legible de cada submódulo (segunda parte del nombre del permiso).
-     * Ej: "tecnologia.equipos.ver" → submódulo = "equipos"
-     */
     protected function nombreSubmodulo($subKey)
     {
         return [
-            // Tecnología
             'equipos' => 'Equipos',
             'componentes' => 'Componentes',
             'tipos-equipos' => 'Tipos de Equipos',
             'categorias-componentes' => 'Categorías de Componentes',
             'ordenes' => 'Órdenes de Servicio',
-
-            // Bienes
             'bienes' => 'Bienes',
             'categorias' => 'Categorías',
-
-            // Vehículos
             'vehiculos' => 'Vehículos',
-
-            // Sonido
             'sonido' => 'Equipos de Sonido',
-
-            // Entrada/Salida
             'entrada-salida' => 'Registros de Entrada/Salida',
-
-            // Simple (sin submódulo real)
             'dashboard' => 'General',
             'valorizacion' => 'Valorización de Inventario',
             'bitacora' => 'Bitácora Global',
@@ -66,21 +49,20 @@ class RoleController extends Controller
             'estados' => 'Estados y Sedes',
             'usuarios' => 'Usuarios',
             'roles' => 'Roles',
+            'acceso_nacional' => 'Acceso Nacional',
         ][$subKey] ?? ucfirst(str_replace('-', ' ', $subKey));
     }
 
     /**
-     * Agrupa los permisos por módulo y submódulo, usando el campo `modulo`
-     * de la BD y la estructura del nombre (modulo.submodulo.accion).
-     *
-     * @return array
+     * Agrupa los permisos por módulo y submódulo, EXCLUYENDO los permisos
+     * especiales (como acceso.nacional) que se manejan por separado.
      */
     protected function agruparPermisos()
     {
-        // Traemos TODOS los permisos ordenados por nombre
-        $permisos = Permission::orderBy('name')->get();
+        $permisos = Permission::where('name', '!=', 'acceso.nacional')
+            ->orderBy('name')
+            ->get();
 
-        // Orden en el que queremos mostrar los módulos
         $ordenModulos = [
             'dashboard',
             'tecnologia',
@@ -96,17 +78,12 @@ class RoleController extends Controller
             'roles',
         ];
 
-        // Estructura a devolver: [moduloKey => ['nombre' => ..., 'submodulos' => [subKey => ['nombre' => ..., 'permisos' => Collection]]]]
         $estructura = [];
 
         foreach ($permisos as $permiso) {
-            // Determinar el módulo (usando el campo `modulo` de la BD)
             $moduloKey = $permiso->modulo ?? $this->extraerModuloDelNombre($permiso->name);
-
-            // Determinar el submódulo (segunda parte del nombre)
             $subKey = $this->extraerSubmoduloDelNombre($permiso->name, $moduloKey);
 
-            // Inicializar el módulo si no existe
             if (!isset($estructura[$moduloKey])) {
                 $estructura[$moduloKey] = [
                     'nombre' => $this->nombreModulo($moduloKey),
@@ -114,7 +91,6 @@ class RoleController extends Controller
                 ];
             }
 
-            // Inicializar el submódulo si no existe
             if (!isset($estructura[$moduloKey]['submodulos'][$subKey])) {
                 $estructura[$moduloKey]['submodulos'][$subKey] = [
                     'nombre' => $this->nombreSubmodulo($subKey),
@@ -122,18 +98,15 @@ class RoleController extends Controller
                 ];
             }
 
-            // Agregar el permiso
             $estructura[$moduloKey]['submodulos'][$subKey]['permisos']->push($permiso);
         }
 
-        // Reordenar según $ordenModulos
         $estructuraOrdenada = [];
         foreach ($ordenModulos as $key) {
             if (isset($estructura[$key])) {
                 $estructuraOrdenada[$key] = $estructura[$key];
             }
         }
-        // Agregar cualquier módulo que no esté en el orden (por si acaso)
         foreach ($estructura as $key => $data) {
             if (!isset($estructuraOrdenada[$key])) {
                 $estructuraOrdenada[$key] = $data;
@@ -143,32 +116,41 @@ class RoleController extends Controller
         return $estructuraOrdenada;
     }
 
-    /**
-     * Extrae el módulo del nombre del permiso si no hay campo `modulo`.
-     * Ej: "tecnologia.equipos.ver" → "tecnologia"
-     */
     protected function extraerModuloDelNombre($nombrePermiso)
     {
         $partes = explode('.', $nombrePermiso);
         return $partes[0] ?? 'otros';
     }
 
-    /**
-     * Extrae el submódulo del nombre del permiso.
-     * - 3 partes: "tecnologia.equipos.ver" → "equipos"
-     * - 2 partes: "bitacora.ver" → "bitacora"
-     */
     protected function extraerSubmoduloDelNombre($nombrePermiso, $moduloKey)
     {
         $partes = explode('.', $nombrePermiso);
-
-        // Caso 3+ partes: modulo.submodulo.accion
         if (count($partes) >= 3) {
             return $partes[1];
         }
-
-        // Caso 2 partes: modulo.accion → el submódulo es el propio módulo
         return $moduloKey;
+    }
+
+    /**
+     * Determina si un rol debe considerarse "Administrador Total".
+     * Criterio:
+     *  - Su nombre está en config('institucional.roles_admin'), O
+     *  - Tiene TODOS los permisos actuales del sistema.
+     */
+    protected function rolEsAdmin($role): bool
+    {
+        $rolesAdmin = config('institucional.roles_admin', ['Administrador']);
+
+        if (!empty($rolesAdmin) && in_array($role->name, $rolesAdmin, true)) {
+            return true;
+        }
+
+        $totalPermisos = Permission::count();
+        if ($totalPermisos === 0) {
+            return false;
+        }
+
+        return $role->permissions->count() >= $totalPermisos;
     }
 
     public function index()
@@ -180,7 +162,8 @@ class RoleController extends Controller
     public function create()
     {
         $estructura = $this->agruparPermisos();
-        return view('admin.roles.create', compact('estructura'));
+        $permisoNacional = Permission::where('name', 'acceso.nacional')->first();
+        return view('admin.roles.create', compact('estructura', 'permisoNacional'));
     }
 
     public function store(Request $request)
@@ -189,13 +172,36 @@ class RoleController extends Controller
             'name' => 'required|string|max:100|unique:roles,name',
             'permissions' => 'nullable|array',
             'permissions.*' => 'exists:permisos,id',
+            'es_admin' => 'nullable|in:0,1',
+            'acceso_nacional' => 'nullable|in:0,1',
         ]);
 
         $role = Role::create(['name' => $validated['name'], 'guard_name' => 'web']);
 
-        if (!empty($validated['permissions'])) {
-            $permisos = Permission::whereIn('id', $validated['permissions'])->get();
-            $role->syncPermissions($permisos);
+        $permisoNacional = Permission::where('name', 'acceso.nacional')->first();
+
+        // Determinar si es admin:
+        //  1) Por check "es_admin" del formulario, O
+        //  2) Porque el nombre está en la lista config de roles_admin
+        $rolesAdminConfig = config('institucional.roles_admin', ['Administrador']);
+        $esAdminPorNombre = in_array($validated['name'], $rolesAdminConfig, true);
+        $esAdminForm = $request->input('es_admin') == '1';
+
+        if ($esAdminForm || $esAdminPorNombre) {
+            // Admin: TODOS los permisos + acceso.nacional garantizado
+            $role->syncPermissions(Permission::all());
+        } else {
+            $permisosIds = $validated['permissions'] ?? [];
+
+            // Agregar permiso acceso.nacional si está marcado
+            if ($request->input('acceso_nacional') == '1' && $permisoNacional) {
+                $permisosIds[] = $permisoNacional->id;
+            }
+
+            if (!empty($permisosIds)) {
+                $permisos = Permission::whereIn('id', array_unique($permisosIds))->get();
+                $role->syncPermissions($permisos);
+            }
         }
 
         BitacoraService::crear('roles', $role, 'Rol creado: ' . $role->name, $role->name);
@@ -207,8 +213,22 @@ class RoleController extends Controller
     {
         $role = Role::findOrFail($id);
         $estructura = $this->agruparPermisos();
+        $permisoNacional = Permission::where('name', 'acceso.nacional')->first();
+
         $rolePermissions = $role->permissions->pluck('id')->toArray();
-        return view('admin.roles.edit', compact('role', 'estructura', 'rolePermissions'));
+        $tieneAccesoNacional = $permisoNacional && in_array($permisoNacional->id, $rolePermissions);
+
+        // ¿Este rol es admin por config (nombre en lista) o por tener todos los permisos?
+        $esAdmin = $this->rolEsAdmin($role);
+
+        return view('admin.roles.edit', compact(
+            'role',
+            'estructura',
+            'permisoNacional',
+            'rolePermissions',
+            'tieneAccesoNacional',
+            'esAdmin'
+        ));
     }
 
     public function update(Request $request, $id)
@@ -223,17 +243,31 @@ class RoleController extends Controller
             'name' => 'required|string|max:100|unique:roles,name,' . $role->id,
             'permissions' => 'nullable|array',
             'permissions.*' => 'exists:permisos,id',
+            'es_admin' => 'nullable|in:0,1',
+            'acceso_nacional' => 'nullable|in:0,1',
         ]);
 
         $datosAnteriores = $role->toArray();
 
         $role->update(['name' => $validated['name']]);
 
-        if (isset($validated['permissions'])) {
-            $permisos = Permission::whereIn('id', $validated['permissions'])->get();
-            $role->syncPermissions($permisos);
+        $permisoNacional = Permission::where('name', 'acceso.nacional')->first();
+
+        $rolesAdminConfig = config('institucional.roles_admin', ['Administrador']);
+        $esAdminPorNombre = in_array($validated['name'], $rolesAdminConfig, true);
+        $esAdminForm = $request->input('es_admin') == '1';
+
+        if ($esAdminForm || $esAdminPorNombre) {
+            $role->syncPermissions(Permission::all());
         } else {
-            $role->syncPermissions([]);
+            $permisosIds = $validated['permissions'] ?? [];
+
+            if ($request->input('acceso_nacional') == '1' && $permisoNacional) {
+                $permisosIds[] = $permisoNacional->id;
+            }
+
+            $permisos = Permission::whereIn('id', array_unique($permisosIds))->get();
+            $role->syncPermissions($permisos);
         }
 
         BitacoraService::editar('roles', $role, $datosAnteriores, 'Rol actualizado: ' . $role->name, $role->name);
@@ -247,6 +281,11 @@ class RoleController extends Controller
 
         if ($role->name === 'Administrador') {
             return redirect()->route('admin.roles.index')->with('error', 'El rol Administrador no puede ser eliminado.');
+        }
+
+        // Proteger roles admin (por nombre config o por tener todos los permisos)
+        if ($this->rolEsAdmin($role)) {
+            return redirect()->route('admin.roles.index')->with('error', 'No se puede eliminar un rol con acceso total.');
         }
 
         if ($role->users()->count() > 0) {

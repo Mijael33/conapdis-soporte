@@ -17,18 +17,31 @@ use App\Exports\ValorizacionExport;
 class ValorizacionController extends Controller
 {
     /**
-     * Aplica el filtro de sede/estado según el rol del usuario.
+     * Aplica el filtro de sede/estado según los permisos del usuario.
+     *
+     * - Si el usuario puede ver nacional (admin, auditor o con acceso.nacional):
+     *   respeta el filtro de sesión (sede o estado) o muestra todo.
+     * - Si NO puede: lo fuerza a su propia sede.
      */
-    private function aplicarFiltro($query, $user, $esAdmin, $esAuditor, $sedeId, $estadoId)
+    private function aplicarFiltro($query)
     {
-        if (!$esAdmin && !$esAuditor) {
+        $user = auth()->user();
+        $sedeId = session('filtro_sede_id');
+        $estadoId = session('filtro_estado_id');
+
+        if ($user->puedeVerNacional()) {
+            if ($sedeId) {
+                $query->where('sede_id', $sedeId);
+            } elseif ($estadoId) {
+                $sedeIds = Sede::where('estado_id', $estadoId)->pluck('id');
+                $query->whereIn('sede_id', $sedeIds);
+            }
+            // Si no hay filtro en sesión, ve todo
+        } else {
+            // Usuario sin acceso nacional: SIEMPRE su sede
             $query->where('sede_id', $user->sede_id);
-        } elseif ($sedeId) {
-            $query->where('sede_id', $sedeId);
-        } elseif ($estadoId) {
-            $sedeIds = Sede::where('estado_id', $estadoId)->pluck('id');
-            $query->whereIn('sede_id', $sedeIds);
         }
+
         return $query;
     }
 
@@ -37,12 +50,6 @@ class ValorizacionController extends Controller
      */
     private function recolectarDatos(Request $request)
     {
-        $user = auth()->user();
-        $esAdmin = $user->hasRole('Administrador');
-        $esAuditor = $user->hasRole('Auditor');
-        $sedeId = session('filtro_sede_id');
-        $estadoId = session('filtro_estado_id');
-
         $desde = $request->fecha_desde;
         $hasta = $request->fecha_hasta;
         $incluirComponentes = $request->boolean('incluir_componentes', true);
@@ -52,8 +59,7 @@ class ValorizacionController extends Controller
         | EQUIPOS
         |--------------------------------------------------------------------------
         */
-        $equiposQuery = Equipo::query();
-        $equiposQuery = $this->aplicarFiltro($equiposQuery, $user, $esAdmin, $esAuditor, $sedeId, $estadoId);
+        $equiposQuery = $this->aplicarFiltro(Equipo::query());
 
         if ($desde) $equiposQuery->whereDate('created_at', '>=', $desde);
         if ($hasta) $equiposQuery->whereDate('created_at', '<=', $hasta);
@@ -70,8 +76,7 @@ class ValorizacionController extends Controller
         | COMPONENTES
         |--------------------------------------------------------------------------
         */
-        $componentesQuery = Componente::query();
-        $componentesQuery = $this->aplicarFiltro($componentesQuery, $user, $esAdmin, $esAuditor, $sedeId, $estadoId);
+        $componentesQuery = $this->aplicarFiltro(Componente::query());
 
         if ($desde) $componentesQuery->whereDate('created_at', '>=', $desde);
         if ($hasta) $componentesQuery->whereDate('created_at', '<=', $hasta);
@@ -88,8 +93,7 @@ class ValorizacionController extends Controller
         | BIENES NACIONALES
         |--------------------------------------------------------------------------
         */
-        $bienesQuery = BienNacional::query();
-        $bienesQuery = $this->aplicarFiltro($bienesQuery, $user, $esAdmin, $esAuditor, $sedeId, $estadoId);
+        $bienesQuery = $this->aplicarFiltro(BienNacional::query());
 
         if ($desde) $bienesQuery->whereDate('fecha_adquisicion', '>=', $desde);
         if ($hasta) $bienesQuery->whereDate('fecha_adquisicion', '<=', $hasta);
@@ -106,8 +110,7 @@ class ValorizacionController extends Controller
         | VEHÍCULOS
         |--------------------------------------------------------------------------
         */
-        $vehiculosQuery = Vehiculo::query();
-        $vehiculosQuery = $this->aplicarFiltro($vehiculosQuery, $user, $esAdmin, $esAuditor, $sedeId, $estadoId);
+        $vehiculosQuery = $this->aplicarFiltro(Vehiculo::query());
 
         if ($desde) $vehiculosQuery->whereDate('created_at', '>=', $desde);
         if ($hasta) $vehiculosQuery->whereDate('created_at', '<=', $hasta);
@@ -124,8 +127,7 @@ class ValorizacionController extends Controller
         | EQUIPOS DE SONIDO
         |--------------------------------------------------------------------------
         */
-        $sonidoQuery = EquipoSonido::query();
-        $sonidoQuery = $this->aplicarFiltro($sonidoQuery, $user, $esAdmin, $esAuditor, $sedeId, $estadoId);
+        $sonidoQuery = $this->aplicarFiltro(EquipoSonido::query());
 
         if ($desde) $sonidoQuery->whereDate('created_at', '>=', $desde);
         if ($hasta) $sonidoQuery->whereDate('created_at', '<=', $hasta);

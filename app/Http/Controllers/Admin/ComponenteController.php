@@ -25,30 +25,38 @@ class ComponenteController extends Controller
 
     public function index(Request $request)
     {
-        $sedeId = session('filtro_sede_id');
-        $estadoId = session('filtro_estado_id');
-
         $query = Componente::with(['categoria', 'sede.estado', 'equipoActual']);
 
-        if ($sedeId) {
-            $query->where('sede_id', $sedeId);
-        } elseif ($estadoId) {
-            $sedeIds = Sede::where('estado_id', $estadoId)->pluck('id');
-            $query->whereIn('sede_id', $sedeIds);
-        }
+        // FILTRO GLOBAL
+        $query = $this->filtrarPorSede($query);
 
+        // Filtros locales
         if ($request->categoria_id) $query->where('categoria_componente_id', $request->categoria_id);
         if ($request->estatus) $query->where('estatus', $request->estatus);
+
+        // BÚSQUEDA AMPLIADA
         if ($request->search) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('serial_unico', 'ILIKE', "%{$search}%")
                   ->orWhere('marca', 'ILIKE', "%{$search}%")
-                  ->orWhere('modelo', 'ILIKE', "%{$search}%");
+                  ->orWhere('modelo', 'ILIKE', "%{$search}%")
+                  ->orWhere('estatus', 'ILIKE', "%{$search}%")
+                  ->orWhere('observaciones', 'ILIKE', "%{$search}%")
+                  ->orWhereHas('categoria', function ($q2) use ($search) {
+                      $q2->where('nombre', 'ILIKE', "%{$search}%");
+                  })
+                  ->orWhereHas('sede', function ($q2) use ($search) {
+                      $q2->where('nombre_sede', 'ILIKE', "%{$search}%")
+                         ->orWhereHas('estado', function ($q3) use ($search) {
+                             $q3->where('nombre', 'ILIKE', "%{$search}%");
+                         });
+                  });
             });
         }
 
-        $componentes = $query->orderBy('marca')->paginate(15);
+        // Orden: más reciente primero
+        $componentes = $query->orderBy('id', 'desc')->paginate(15);
         $categorias = CategoriaComponente::orderBy('nombre')->get();
 
         return view('admin.componentes.index', compact('componentes', 'categorias'));
@@ -88,11 +96,15 @@ class ComponenteController extends Controller
             'observaciones' => 'nullable|string',
         ]);
 
+        // Forzar la sede del usuario si no tiene acceso nacional
+        if (!auth()->user()->puedeVerNacional()) {
+            $validated['sede_id'] = auth()->user()->sede_id;
+        }
+
         if (empty($validated['valor_prudencial']) && empty($validated['valor_adquisicion'])) {
             return back()->with('error', 'Debe ingresar al menos uno de los dos valores: Valor Prudencial o Valor de Adquisición.')->withInput();
         }
 
-        // Default estatus
         $validated['estatus'] = $validated['estatus'] ?? 'Disponible';
 
         if ($request->filled('caracteristicas_tecnicas')) {
@@ -149,6 +161,11 @@ class ComponenteController extends Controller
             'valor_adquisicion' => 'nullable|numeric|min:0',
             'observaciones' => 'nullable|string',
         ]);
+
+        // Forzar la sede del usuario si no tiene acceso nacional
+        if (!auth()->user()->puedeVerNacional()) {
+            $validated['sede_id'] = auth()->user()->sede_id;
+        }
 
         if (empty($validated['valor_prudencial']) && empty($validated['valor_adquisicion'])) {
             return back()->with('error', 'Debe ingresar al menos uno de los dos valores: Valor Prudencial o Valor de Adquisición.')->withInput();
@@ -258,13 +275,11 @@ class ComponenteController extends Controller
     public function exportarPDF()
     {
         $user = auth()->user();
-        $esAdmin = $user->hasRole('Administrador');
-        $esAuditor = $user->hasRole('Auditor');
         $sedeId = session('filtro_sede_id');
         $estadoId = session('filtro_estado_id');
 
         $query = Componente::with(['categoria', 'sede.estado', 'equipoActual']);
-        if (!$esAdmin && !$esAuditor) {
+        if (!$user->puedeVerNacional()) {
             $query->where('sede_id', $user->sede_id);
         } elseif ($sedeId) {
             $query->where('sede_id', $sedeId);
@@ -273,7 +288,7 @@ class ComponenteController extends Controller
             $query->whereIn('sede_id', $sedeIds);
         }
 
-        $componentes = $query->orderBy('serial_unico')->get();
+        $componentes = $query->orderBy('id', 'asc')->get();
         $pdf = Pdf::loadView('admin.componentes.pdf', compact('componentes'));
         $pdf->setPaper('letter', 'landscape');
         return $pdf->download('componentes-' . date('Y-m-d') . '.pdf');

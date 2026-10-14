@@ -24,30 +24,41 @@ class EquipoSonidoController extends Controller
 
     public function index(Request $request)
     {
-        $sedeId = session('filtro_sede_id');
-        $estadoId = session('filtro_estado_id');
-
         $query = EquipoSonido::with(['categoria', 'sede.estado']);
 
-        if ($sedeId) {
-            $query->where('sede_id', $sedeId);
-        } elseif ($estadoId) {
-            $sedeIds = Sede::where('estado_id', $estadoId)->pluck('id');
-            $query->whereIn('sede_id', $sedeIds);
-        }
+        // FILTRO GLOBAL
+        $query = $this->filtrarPorSede($query);
 
+        // Filtros locales
         if ($request->categoria_id) $query->where('categoria_sonido_id', $request->categoria_id);
         if ($request->estatus) $query->where('estatus', $request->estatus);
+
+        // BÚSQUEDA AMPLIADA
         if ($request->search) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
-                $q->where('serial', 'ILIKE', "%{$search}%")
+                $q->where('codigo_inventario', 'ILIKE', "%{$search}%")
+                  ->orWhere('serial', 'ILIKE', "%{$search}%")
                   ->orWhere('marca', 'ILIKE', "%{$search}%")
-                  ->orWhere('modelo', 'ILIKE', "%{$search}%");
+                  ->orWhere('modelo', 'ILIKE', "%{$search}%")
+                  ->orWhere('potencia', 'ILIKE', "%{$search}%")
+                  ->orWhere('estatus', 'ILIKE', "%{$search}%")
+                  ->orWhere('usuario_asignado_nombre', 'ILIKE', "%{$search}%")
+                  ->orWhere('usuario_asignado_cedula', 'ILIKE', "%{$search}%")
+                  ->orWhere('usuario_asignado_cargo', 'ILIKE', "%{$search}%")
+                  ->orWhereHas('categoria', function ($q2) use ($search) {
+                      $q2->where('nombre', 'ILIKE', "%{$search}%");
+                  })
+                  ->orWhereHas('sede', function ($q2) use ($search) {
+                      $q2->where('nombre_sede', 'ILIKE', "%{$search}%")
+                         ->orWhereHas('estado', function ($q3) use ($search) {
+                             $q3->where('nombre', 'ILIKE', "%{$search}%");
+                         });
+                  });
             });
         }
 
-        $equipos = $query->orderBy('serial')->paginate(15);
+        $equipos = $query->orderBy('id', 'desc')->paginate(15);
         $categorias = CategoriaSonido::orderBy('nombre')->get();
 
         return view('admin.sonido.index', compact('equipos', 'categorias'));
@@ -84,6 +95,11 @@ class EquipoSonidoController extends Controller
             'valor_adquisicion' => 'nullable|numeric|min:0',
             'observaciones' => 'nullable|string',
         ]);
+
+        // Forzar la sede del usuario si no tiene acceso nacional
+        if (!auth()->user()->puedeVerNacional()) {
+            $validated['sede_id'] = auth()->user()->sede_id;
+        }
 
         if (empty($validated['valor_prudencial']) && empty($validated['valor_adquisicion'])) {
             return back()->with('error', 'Debe ingresar al menos uno de los dos valores: Valor Prudencial o Valor de Adquisición.')->withInput();
@@ -126,6 +142,11 @@ class EquipoSonidoController extends Controller
             'valor_adquisicion' => 'nullable|numeric|min:0',
             'observaciones' => 'nullable|string',
         ]);
+
+        // Forzar la sede del usuario si no tiene acceso nacional
+        if (!auth()->user()->puedeVerNacional()) {
+            $validated['sede_id'] = auth()->user()->sede_id;
+        }
 
         if (empty($validated['valor_prudencial']) && empty($validated['valor_adquisicion'])) {
             return back()->with('error', 'Debe ingresar al menos uno de los dos valores: Valor Prudencial o Valor de Adquisición.')->withInput();
@@ -191,13 +212,11 @@ class EquipoSonidoController extends Controller
     public function exportarPDF()
     {
         $user = auth()->user();
-        $esAdmin = $user->hasRole('Administrador');
-        $esAuditor = $user->hasRole('Auditor');
         $sedeId = session('filtro_sede_id');
         $estadoId = session('filtro_estado_id');
 
         $query = EquipoSonido::with(['categoria', 'sede.estado']);
-        if (!$esAdmin && !$esAuditor) {
+        if (!$user->puedeVerNacional()) {
             $query->where('sede_id', $user->sede_id);
         } elseif ($sedeId) {
             $query->where('sede_id', $sedeId);
@@ -206,7 +225,7 @@ class EquipoSonidoController extends Controller
             $query->whereIn('sede_id', $sedeIds);
         }
 
-        $equipos = $query->orderBy('serial')->get();
+        $equipos = $query->orderBy('id', 'asc')->get();
         $pdf = Pdf::loadView('admin.sonido.pdf', compact('equipos'));
         $pdf->setPaper('letter', 'landscape');
         return $pdf->download('sonido-' . date('Y-m-d') . '.pdf');

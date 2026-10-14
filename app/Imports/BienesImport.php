@@ -8,20 +8,32 @@ use App\Models\Sede;
 use App\Models\Estado;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
-use Maatwebsite\Excel\Concerns\WithChunkReading;
-use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
+use Maatwebsite\Excel\Concerns\WithLimit;
 use Illuminate\Support\Facades\Auth;
 
-class BienesImport implements ToModel, WithHeadingRow, WithChunkReading, SkipsEmptyRows
+class BienesImport implements ToModel, WithHeadingRow, WithLimit
 {
     protected $service;
     protected $filaActual = 1;
 
     protected array $codigosEnArchivo = [];
+    protected array $categoriasCache = [];
+    protected array $sedesCache = [];
+
+    protected $userId = null;
+    protected $userSedeId = null;
+    protected $puedeImportarCualquierSede = false;
 
     public function __construct($service = null)
     {
         $this->service = $service;
+
+        $user = Auth::user();
+        if ($user) {
+            $this->userId = $user->id;
+            $this->userSedeId = $user->sede_id;
+            $this->puedeImportarCualquierSede = $user->puedeVerNacional();
+        }
     }
 
     public function model(array $row)
@@ -33,21 +45,18 @@ class BienesImport implements ToModel, WithHeadingRow, WithChunkReading, SkipsEm
         }
 
         try {
-            $user = Auth::user();
-            $esAdmin = $user->hasRole('Administrador');
+            $puedeImportarCualquierSede = $this->puedeImportarCualquierSede;
+            $userSedeId = $this->userSedeId;
 
             if (empty($row['codigo_inventario'])) {
                 throw new \Exception('El campo "codigo_inventario" es obligatorio');
             }
-
             if (empty($row['descripcion'])) {
                 throw new \Exception('El campo "descripcion" es obligatorio');
             }
-
             if (empty($row['categoria'])) {
                 throw new \Exception('El campo "categoria" es obligatorio');
             }
-
             if (empty($row['sede'])) {
                 throw new \Exception('El campo "sede" es obligatorio');
             }
@@ -65,26 +74,34 @@ class BienesImport implements ToModel, WithHeadingRow, WithChunkReading, SkipsEm
                 throw new \Exception('El código "' . $codigoTrim . '" ya existe en la base de datos');
             }
 
-            $categoria = CategoriaBien::firstOrCreate(
-                ['nombre' => trim($row['categoria'])],
-                ['descripcion' => 'Creada automáticamente al importar']
-            );
-
-            $sede = Sede::where('nombre_sede', trim($row['sede']))->first();
-
-            if (!$sede) {
-                $dc = Estado::where('nombre', 'Distrito Capital')->first();
-                if ($dc) {
-                    $sede = Sede::create([
-                        'estado_id' => $dc->id,
-                        'nombre_sede' => trim($row['sede']),
-                        'direccion' => 'Dirección pendiente',
-                        'codigo_postal' => null,
-                    ]);
-                }
+            $nombreCategoria = trim($row['categoria']);
+            if (!isset($this->categoriasCache[$nombreCategoria])) {
+                $this->categoriasCache[$nombreCategoria] = CategoriaBien::firstOrCreate(
+                    ['nombre' => $nombreCategoria],
+                    ['descripcion' => 'Creada automáticamente al importar']
+                );
             }
+            $categoria = $this->categoriasCache[$nombreCategoria];
 
-            if (!$esAdmin && $sede && $sede->id !== $user->sede_id) {
+            $nombreSede = trim($row['sede']);
+            if (!isset($this->sedesCache[$nombreSede])) {
+                $sede = Sede::where('nombre_sede', $nombreSede)->first();
+                if (!$sede) {
+                    $dc = Estado::where('nombre', 'Distrito Capital')->first();
+                    if ($dc) {
+                        $sede = Sede::create([
+                            'estado_id' => $dc->id,
+                            'nombre_sede' => $nombreSede,
+                            'direccion' => 'Dirección pendiente',
+                            'codigo_postal' => null,
+                        ]);
+                    }
+                }
+                $this->sedesCache[$nombreSede] = $sede;
+            }
+            $sede = $this->sedesCache[$nombreSede];
+
+            if (!$puedeImportarCualquierSede && $sede && $sede->id !== $userSedeId) {
                 throw new \Exception('No tiene permiso para importar en la sede: ' . $row['sede']);
             }
 
@@ -94,7 +111,7 @@ class BienesImport implements ToModel, WithHeadingRow, WithChunkReading, SkipsEm
             $bien = new BienNacional([
                 'codigo_inventario' => $codigoTrim,
                 'categoria_bien_id' => $categoria ? $categoria->id : null,
-                'sede_id' => $sede ? $sede->id : ($esAdmin ? null : $user->sede_id),
+                'sede_id' => $sede ? $sede->id : ($puedeImportarCualquierSede ? null : $userSedeId),
                 'descripcion' => trim($row['descripcion']),
                 'marca' => isset($row['marca']) ? trim($row['marca']) : null,
                 'modelo' => isset($row['modelo']) ? trim($row['modelo']) : null,
@@ -130,7 +147,6 @@ class BienesImport implements ToModel, WithHeadingRow, WithChunkReading, SkipsEm
                     ]
                 );
             }
-
             return null;
         }
     }
@@ -139,19 +155,15 @@ class BienesImport implements ToModel, WithHeadingRow, WithChunkReading, SkipsEm
     {
         if ($valor === null || $valor === '') return null;
         if (is_numeric($valor)) return $valor;
-
         $limpio = str_replace('.', '', (string) $valor);
         $limpio = str_replace(',', '.', $limpio);
-
         return is_numeric($limpio) ? $limpio : null;
     }
 
     private function normalizarEstatus($estatus)
     {
         if (empty($estatus)) return 'Disponible';
-
         $estatus = mb_strtolower(trim($estatus));
-
         $mapa = [
             'disponible' => 'Disponible',
             'asignado' => 'Asignado',
@@ -162,12 +174,11 @@ class BienesImport implements ToModel, WithHeadingRow, WithChunkReading, SkipsEm
             'revision' => 'En Mantenimiento',
             'desincorporado' => 'Desincorporado',
         ];
-
         return $mapa[$estatus] ?? 'Disponible';
     }
 
-    public function chunkSize(): int
+    public function limit(): int
     {
-        return 500;
+        return 10000;
     }
 }

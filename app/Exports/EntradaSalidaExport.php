@@ -14,14 +14,12 @@ class EntradaSalidaExport implements FromCollection, WithHeadings, WithMapping, 
     public function collection()
     {
         $user = auth()->user();
-        $esAdmin = $user->hasRole('Administrador');
-        $esAuditor = $user->hasRole('Auditor');
         $sedeId = session('filtro_sede_id');
         $estadoId = session('filtro_estado_id');
 
         $query = RegistroEntradaSalida::with(['sede.estado', 'salidaUsuario', 'entradaUsuario']);
 
-        if (!$esAdmin && !$esAuditor) {
+        if (!$user->puedeVerNacional()) {
             $query->where('sede_id', $user->sede_id);
         } elseif ($sedeId) {
             $query->where('sede_id', $sedeId);
@@ -93,7 +91,7 @@ class EntradaSalidaExport implements FromCollection, WithHeadings, WithMapping, 
             $reg->salida_estado_bien,
             $reg->salida_observaciones,
             $reg->salidaUsuario->name ?? 'N/A',
-            $reg->fecha_hora_entrada ? \App\Helpers\FechaHelper::formatear($reg->fecha_hora_entrada) : '',
+            $reg->fecha_hora_entrada ? \App\Helpers\FechaHelper::formatsear($reg->fecha_hora_entrada) : '',
             $reg->entrada_recibe_nombre,
             $reg->entrada_recibe_cedula,
             $reg->entrada_seguridad_nombre,

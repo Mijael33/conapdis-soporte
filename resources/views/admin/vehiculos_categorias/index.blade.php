@@ -5,7 +5,9 @@
 <div class="card">
     <div class="card-header bg-white d-flex justify-content-between align-items-center py-3 flex-wrap gap-2">
         <h5 class="mb-0 fw-bold">Catálogo de Categorías</h5>
+        @can('vehiculos.categorias.crear')
         <a href="{{ route('admin.vehiculos-categorias.create') }}" class="btn-conapdis btn-sm"><i class="bi bi-plus-lg"></i> Nueva Categoría</a>
+        @endcan
     </div>
     <div class="card-body">
         <div class="table-responsive">
@@ -20,11 +22,15 @@
                         <td class="fw-semibold"><i class="bi bi-truck me-2"></i>{{ $cat->nombre }}</td>
                         <td>{{ $cat->descripcion ?? 'Sin descripción' }}</td>
                         <td>
+                            @can('vehiculos.categorias.editar')
                             <a href="{{ route('admin.vehiculos-categorias.edit', $cat) }}" class="btn btn-sm btn-outline-conapdis me-1"><i class="bi bi-pencil"></i></a>
+                            @endcan
+                            @can('vehiculos.categorias.eliminar')
                             <form action="{{ route('admin.vehiculos-categorias.destroy', $cat) }}" method="POST" class="d-inline">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('¿Eliminar?')"><i class="bi bi-trash"></i></button>
                             </form>
+                            @endcan
                         </td>
                     </tr>
                     @empty

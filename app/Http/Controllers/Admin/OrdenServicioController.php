@@ -42,7 +42,6 @@ class OrdenServicioController extends Controller
     public function create()
     {
         $user = auth()->user();
-        $esAdmin = $user->hasRole('Administrador');
         $sedeId = session('filtro_sede_id');
         $estadoId = session('filtro_estado_id');
 
@@ -52,7 +51,7 @@ class OrdenServicioController extends Controller
             })
             ->orderBy('codigo_inventario_institucional');
 
-        if (!$esAdmin) {
+        if (!$user->puedeVerNacional()) {
             $equiposQuery->where('sede_id', $user->sede_id);
         } elseif ($sedeId) {
             $equiposQuery->where('sede_id', $sedeId);
@@ -66,7 +65,7 @@ class OrdenServicioController extends Controller
 
         $tecnicosQuery = User::orderBy('name');
 
-        if (!$esAdmin) {
+        if (!$user->puedeVerNacional()) {
             $tecnicosQuery->where('sede_id', $user->sede_id);
         } elseif ($sedeId) {
             $tecnicosQuery->where('sede_id', $sedeId);

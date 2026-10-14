@@ -42,29 +42,11 @@
                             </select>
                         </div>
 
-                        <div class="col-md-5">
+                        <div class="col-md-8">
                             <label class="form-label fw-semibold">Bien a Retirar *</label>
                             <select name="bien_id" id="bien_id" class="form-select rounded-3" required>
                                 <option value="">Primero seleccione el tipo</option>
                             </select>
-                        </div>
-
-                        <div class="col-md-3">
-                            <label class="form-label fw-semibold">Sede *</label>
-                            @if(auth()->user()->hasRole('Administrador') || auth()->user()->hasRole('Auditor'))
-                                <select name="sede_id" class="form-select rounded-3" required>
-                                    <option value="">Seleccione la sede</option>
-                                    @foreach($sedes as $sede)
-                                        <option value="{{ $sede->id }}" {{ old('sede_id', auth()->user()->sede_id) == $sede->id ? 'selected' : '' }}>
-                                            {{ $sede->nombre_sede }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            @else
-                                <input type="hidden" name="sede_id" value="{{ auth()->user()->sede_id }}">
-                                <input type="text" class="form-control rounded-3" value="{{ auth()->user()->sede->nombre_sede ?? 'Sin sede asignada' }}" readonly>
-                                <small class="text-muted">Sede asignada automáticamente</small>
-                            @endif
                         </div>
                     </div>
 
@@ -75,6 +57,17 @@
                             <div>
                                 <strong id="info-bien-titulo">Información del Bien</strong>
                                 <div id="info-bien-detalle" class="small mt-1"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Info de sede automática --}}
+                    <div class="alert rounded-3 mt-3" style="background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af;">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-geo-alt-fill me-2 fs-5"></i>
+                            <div>
+                                <strong>Sede del movimiento</strong>
+                                <div class="small">Se tomará automáticamente de la sede del bien seleccionado.</div>
                             </div>
                         </div>
                     </div>
@@ -245,22 +238,22 @@
 const bienes = {
     Tecnologia: [
         @foreach($equipos as $e)
-        { id: {{ $e->id }}, codigo: '{{ $e->codigo_inventario_institucional }}', descripcion: '{{$e->marca }} {{ $e->modelo }}', extra: 'Serial: {{$e->serial_chasis ?? "N/A" }}' },
+        { id: {{ $e->id }}, codigo: '{{ $e->codigo_inventario_institucional }}', descripcion: '{{ $e->marca }} {{ $e->modelo }}', extra: 'Serial: {{ $e->serial_chasis ?? "N/A" }}', sede: '{{ $e->sede->nombre_sede ?? "N/A" }}' },
         @endforeach
     ],
     BienNacional: [
         @foreach($bienes as $b)
-        { id: {{ $b->id }}, codigo: '{{$b->codigo_inventario }}', descripcion: '{{ Str::limit($b->descripcion, 50) }}', extra: 'Serial: {{$b->serial ?? "N/A" }}' },
+        { id: {{ $b->id }}, codigo: '{{ $b->codigo_inventario }}', descripcion: '{{ Str::limit($b->descripcion, 50) }}', extra: 'Serial: {{ $b->serial ?? "N/A" }}', sede: '{{ $b->sede->nombre_sede ?? "N/A" }}' },
         @endforeach
     ],
     Vehiculo: [
         @foreach($vehiculos as $v)
-        { id: {{ $v->id }}, codigo: '{{ $v->placa }}', descripcion: '{{$v->marca }} {{ $v->modelo }}', extra: 'Año: {{ $v->anio ?? "N/A" }}' },
+        { id: {{ $v->id }}, codigo: '{{ $v->placa }}', descripcion: '{{ $v->marca }} {{ $v->modelo }}', extra: 'Año: {{ $v->anio ?? "N/A" }}', sede: '{{ $v->sede->nombre_sede ?? "N/A" }}' },
         @endforeach
     ],
     Sonido: [
         @foreach($sonido as $s)
-        { id: {{ $s->id }}, codigo: '{{ $s->serial }}', descripcion: '{{$s->marca }} {{ $s->modelo }}', extra: 'Código: {{ $s->codigo_inventario }}' },
+        { id: {{ $s->id }}, codigo: '{{ $s->serial }}', descripcion: '{{ $s->marca }} {{ $s->modelo }}', extra: 'Código: {{ $s->codigo_inventario }}', sede: '{{ $s->sede->nombre_sede ?? "N/A" }}' },
         @endforeach
     ]
 };
@@ -296,7 +289,7 @@ document.getElementById('bien_id').addEventListener('change', function() {
     const bien = bienes[tipo].find(b => b.id === id);
     if (bien) {
         document.getElementById('info-bien-titulo').textContent = bien.codigo;
-        document.getElementById('info-bien-detalle').innerHTML = `${bien.descripcion}<br>${bien.extra}`;
+        document.getElementById('info-bien-detalle').innerHTML = `${bien.descripcion}<br>${bien.extra}<br><strong>Sede:</strong> ${bien.sede}`;
         infoBien.classList.remove('d-none');
     }
 });

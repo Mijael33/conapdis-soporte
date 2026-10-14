@@ -6,10 +6,16 @@
     <div class="card-header bg-white d-flex justify-content-between align-items-center py-3 flex-wrap gap-2">
         <h5 class="mb-0 fw-bold">Inventario de Vehículos</h5>
         <div class="d-flex gap-2 flex-wrap">
+            @can('vehiculos.importar')
             <a href="{{ route('admin.vehiculos.importar') }}" class="btn-outline-conapdis btn-sm"><i class="bi bi-upload"></i> Importar Excel</a>
+            @endcan
+            @can('vehiculos.exportar')
             <a href="{{ route('admin.vehiculos.exportar-excel') }}" class="btn-outline-conapdis btn-sm"><i class="bi bi-file-excel"></i> Exportar Excel</a>
             <a href="{{ route('admin.vehiculos.exportar-pdf') }}" class="btn-outline-conapdis btn-sm"><i class="bi bi-file-pdf"></i> Exportar PDF</a>
+            @endcan
+            @can('vehiculos.crear')
             <a href="{{ route('admin.vehiculos.create') }}" class="btn-conapdis btn-sm"><i class="bi bi-plus-lg"></i> Nuevo</a>
+            @endcan
         </div>
     </div>
     <div class="card-body">
@@ -64,11 +70,15 @@
                         </td>
                         <td class="text-center" style="white-space: nowrap;">
                             <a href="{{ route('admin.vehiculos.show', $veh) }}" class="btn btn-sm btn-outline-conapdis me-1"><i class="bi bi-eye"></i></a>
+                            @can('vehiculos.editar')
                             <a href="{{ route('admin.vehiculos.edit', $veh) }}" class="btn btn-sm btn-outline-conapdis me-1"><i class="bi bi-pencil"></i></a>
+                            @endcan
+                            @can('vehiculos.eliminar')
                             <form action="{{ route('admin.vehiculos.destroy', $veh) }}" method="POST" class="d-inline" onsubmit="return confirm('¿Eliminar el vehículo {{ $veh->placa }}?')">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
                             </form>
+                            @endcan
                         </td>
                     </tr>
                     @empty

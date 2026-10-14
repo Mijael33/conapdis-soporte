@@ -6,10 +6,16 @@
     <div class="card-header bg-white d-flex justify-content-between align-items-center py-3 flex-wrap gap-2">
         <h5 class="mb-0 fw-bold">Inventario de Equipos</h5>
         <div class="d-flex gap-2 flex-wrap">
+            @can('tecnologia.equipos.importar')
             <a href="{{ route('admin.equipos.importar') }}" class="btn-outline-conapdis btn-sm"><i class="bi bi-upload"></i> Importar</a>
+            @endcan
+            @can('tecnologia.equipos.exportar')
             <a href="{{ route('admin.equipos.exportar-excel') }}" class="btn-outline-conapdis btn-sm"><i class="bi bi-file-excel"></i> Excel</a>
             <a href="{{ route('admin.equipos.exportar-pdf') }}" class="btn-outline-conapdis btn-sm"><i class="bi bi-file-pdf"></i> PDF</a>
+            @endcan
+            @can('tecnologia.equipos.crear')
             <a href="{{ route('admin.equipos.create') }}" class="btn-conapdis btn-sm"><i class="bi bi-plus-lg"></i> Nuevo</a>
+            @endcan
         </div>
     </div>
     <div class="card-body">
@@ -65,11 +71,15 @@
                         </td>
                         <td class="text-center" style="white-space: nowrap;">
                             <a href="{{ route('admin.equipos.show', $equipo) }}" class="btn btn-sm btn-outline-conapdis me-1"><i class="bi bi-eye"></i></a>
+                            @can('tecnologia.equipos.editar')
                             <a href="{{ route('admin.equipos.edit', $equipo) }}" class="btn btn-sm btn-outline-conapdis me-1"><i class="bi bi-pencil"></i></a>
+                            @endcan
+                            @can('tecnologia.equipos.eliminar')
                             <form action="{{ route('admin.equipos.destroy', $equipo) }}" method="POST" class="d-inline" onsubmit="return confirm('¿Eliminar el equipo {{ $equipo->codigo_inventario_institucional }}?')">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
                             </form>
+                            @endcan
                         </td>
                     </tr>
                     @empty

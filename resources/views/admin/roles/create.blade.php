@@ -15,11 +15,37 @@
                     <input type="text" name="name" class="form-control rounded-3" value="{{ old('name') }}" required placeholder="Ej: Coordinador de Soporte">
                     @error('name') <small class="text-danger">{{ $message }}</small> @enderror
                 </div>
+            </div>
+
+            {{-- ============================================================
+                 PERMISOS ESPECIALES
+                 ============================================================ --}}
+            <hr class="my-4">
+            <h5 class="mb-3" style="color: #1a3b5d; font-weight: 700;">Permisos Especiales</h5>
+
+            <div class="row g-3 mb-4">
                 <div class="col-md-6">
-                    <label class="form-label fw-bold d-block">Modo de Permisos</label>
-                    <div class="form-check form-switch mt-2">
-                        <input type="checkbox" id="es_admin" class="form-check-input" onchange="toggleAdmin()" style="width: 50px; height: 25px;">
-                        <label class="form-check-label fw-bold ms-2" for="es_admin">👑 Es Administrador Total (todos los permisos)</label>
+                    <div class="card border shadow-sm rounded-3 p-3" style="background: #fefce8;">
+                        <div class="form-check form-switch">
+                            <input type="hidden" name="es_admin" value="0">
+                            <input type="checkbox" id="es_admin" name="es_admin" value="1" class="form-check-input" onchange="toggleAdmin()" style="width: 50px; height: 25px;">
+                            <label class="form-check-label fw-bold ms-2" for="es_admin" style="color: #a16207;">
+                                <i class="bi bi-crown-fill me-1"></i>Es Administrador Total (todos los permisos)
+                            </label>
+                        </div>
+                        <small class="text-muted ms-1 mt-1">Si se marca, el rol tendrá acceso completo a todos los módulos del sistema y verá información de todas las sedes.</small>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card border shadow-sm rounded-3 p-3" style="background: #eff6ff;">
+                        <div class="form-check form-switch">
+                            <input type="hidden" name="acceso_nacional" value="0">
+                            <input type="checkbox" id="acceso_nacional" name="acceso_nacional" value="1" class="form-check-input" style="width: 50px; height: 25px;">
+                            <label class="form-check-label fw-bold ms-2" for="acceso_nacional" style="color: #1e40af;">
+                                <i class="bi bi-globe-americas me-1"></i>Acceso Nacional (ver todos los estados y sedes)
+                            </label>
+                        </div>
+                        <small class="text-muted ms-1 mt-1">Si se marca, el rol puede usar el filtro global del dashboard para ver información de cualquier estado o sede, respetando los permisos que tenga asignados. Si no se marca, el rol solo verá información de la sede/estado del usuario.</small>
                     </div>
                 </div>
             </div>
@@ -42,14 +68,6 @@
                 </div>
 
                 @foreach($estructura as $moduloKey => $moduloData)
-                    @php
-                        $tienePermisos = false;
-                        foreach ($moduloData['submodulos'] as $subData) {
-                            if ($subData['permisos']->count() > 0) { $tienePermisos = true; break; }
-                        }
-                    @endphp
-
-                    @if($tienePermisos)
                     <div class="card border-0 shadow-sm rounded-3 mb-3">
                         <div class="card-header bg-white border-bottom py-2 px-3">
                             <h6 class="mb-0 fw-bold" style="color: #003097;">
@@ -107,7 +125,6 @@
                             @endforeach
                         </div>
                     </div>
-                    @endif
                 @endforeach
             </div>
 

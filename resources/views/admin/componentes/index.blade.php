@@ -6,10 +6,16 @@
     <div class="card-header bg-white d-flex justify-content-between align-items-center py-3 flex-wrap gap-2">
         <h5 class="mb-0 fw-bold">Inventario de Componentes</h5>
         <div class="d-flex gap-2 flex-wrap">
+            @can('tecnologia.componentes.importar')
             <a href="{{ route('admin.componentes.importar') }}" class="btn-outline-conapdis btn-sm"><i class="bi bi-upload"></i> Importar</a>
+            @endcan
+            @can('tecnologia.componentes.exportar')
             <a href="{{ route('admin.componentes.exportar-excel') }}" class="btn-outline-conapdis btn-sm"><i class="bi bi-file-excel"></i> Excel</a>
             <a href="{{ route('admin.componentes.exportar-pdf') }}" class="btn-outline-conapdis btn-sm"><i class="bi bi-file-pdf"></i> PDF</a>
+            @endcan
+            @can('tecnologia.componentes.crear')
             <a href="{{ route('admin.componentes.create') }}" class="btn-conapdis btn-sm"><i class="bi bi-plus-lg"></i> Nuevo</a>
+            @endcan
         </div>
     </div>
     <div class="card-body">
@@ -74,11 +80,15 @@
                         </td>
                         <td class="text-center" style="white-space: nowrap;">
                             <a href="{{ route('admin.componentes.show', $comp) }}" class="btn btn-sm btn-outline-conapdis me-1"><i class="bi bi-eye"></i></a>
+                            @can('tecnologia.componentes.editar')
                             <a href="{{ route('admin.componentes.edit', $comp) }}" class="btn btn-sm btn-outline-conapdis me-1"><i class="bi bi-pencil"></i></a>
+                            @endcan
+                            @can('tecnologia.componentes.eliminar')
                             <form action="{{ route('admin.componentes.destroy', $comp) }}" method="POST" class="d-inline" onsubmit="return confirm('¿Eliminar el componente {{ $comp->serial_unico }}?')">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
                             </form>
+                            @endcan
                         </td>
                     </tr>
                     @empty

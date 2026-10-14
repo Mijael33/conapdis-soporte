@@ -14,11 +14,17 @@
             <div class="row g-3 mb-4">
                 <div class="col-md-3">
                     <label class="form-label fw-semibold">Sede *</label>
-                    <select name="sede_id" class="form-select rounded-3" required>
-                        @foreach($sedes as $sede)
-                            <option value="{{ $sede->id }}" {{ old('sede_id', $componente->sede_id)==$sede->id ? 'selected' : '' }}>{{ $sede->nombre_sede }} ({{$sede->estado->nombre }})</option>
-                        @endforeach
-                    </select>
+                    @if(auth()->user()->puedeVerNacional())
+                        <select name="sede_id" class="form-select rounded-3" required>
+                            @foreach($sedes as $sede)
+                                <option value="{{ $sede->id }}" {{ old('sede_id', $componente->sede_id)==$sede->id ? 'selected' : '' }}>{{ $sede->nombre_sede }} ({{$sede->estado->nombre }})</option>
+                            @endforeach
+                        </select>
+                    @else
+                        <input type="text" class="form-control rounded-3" value="{{ $componente->sede->nombre_sede ?? auth()->user()->sede->nombre_sede ?? 'N/A' }}" readonly>
+                        <input type="hidden" name="sede_id" value="{{ $componente->sede_id ?? auth()->user()->sede_id }}">
+                        <small class="text-muted">No podés cambiar la sede del componente.</small>
+                    @endif
                 </div>
                 <div class="col-md-3">
                     <label class="form-label fw-semibold">Categoría *</label>

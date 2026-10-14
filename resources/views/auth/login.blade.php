@@ -12,7 +12,7 @@
 <body class="login-body">
     <div class="login-card">
         <img src="{{ asset('images/logos/logo-conapdis.png') }}" alt="CONAPDIS" style="max-width: 150px; height: auto; display: block; margin: 0 auto 1.5rem;">
-        <h4 class="login-title">Sistema de Gestión Técnica</h4>
+        <h4 class="login-title">Sistema de Gestión de Bienes</h4>
         <p class="login-subtitle">Acceso</p>
         @if($errors->any())
             <div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> {{ $errors->first() }}</div>

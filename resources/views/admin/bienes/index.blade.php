@@ -6,10 +6,16 @@
     <div class="card-header bg-white d-flex justify-content-between align-items-center py-3 flex-wrap gap-2">
         <h5 class="mb-0 fw-bold">Inventario de Bienes</h5>
         <div class="d-flex gap-2 flex-wrap">
+            @can('bienes.importar')
             <a href="{{ route('admin.bienes.importar') }}" class="btn-outline-conapdis btn-sm"><i class="bi bi-upload"></i> Importar Excel</a>
+            @endcan
+            @can('bienes.exportar')
             <a href="{{ route('admin.bienes.exportar-excel') }}" class="btn-outline-conapdis btn-sm"><i class="bi bi-file-excel"></i> Exportar Excel</a>
             <a href="{{ route('admin.bienes.exportar-pdf') }}" class="btn-outline-conapdis btn-sm"><i class="bi bi-file-pdf"></i> Exportar PDF</a>
+            @endcan
+            @can('bienes.crear')
             <a href="{{ route('admin.bienes.create') }}" class="btn-conapdis btn-sm"><i class="bi bi-plus-lg"></i> Nuevo</a>
+            @endcan
         </div>
     </div>
     <div class="card-body">
@@ -63,11 +69,15 @@
                         </td>
                         <td class="text-center" style="white-space: nowrap;">
                             <a href="{{ route('admin.bienes.show', $bien) }}" class="btn btn-sm btn-outline-conapdis me-1"><i class="bi bi-eye"></i></a>
+                            @can('bienes.editar')
                             <a href="{{ route('admin.bienes.edit', $bien) }}" class="btn btn-sm btn-outline-conapdis me-1"><i class="bi bi-pencil"></i></a>
+                            @endcan
+                            @can('bienes.eliminar')
                             <form action="{{ route('admin.bienes.destroy', $bien) }}" method="POST" class="d-inline" onsubmit="return confirm('¿Eliminar el bien {{ $bien->codigo_inventario }}?')">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
                             </form>
+                            @endcan
                         </td>
                     </tr>
                     @empty

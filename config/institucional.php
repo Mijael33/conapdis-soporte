@@ -18,4 +18,19 @@ return [
     // Rutas de imágenes institucionales
     'membrete' => 'images/institucional/membrete.png',
     'logo' => 'images/institucional/logo.png',
+
+    /*
+    |--------------------------------------------------------------------------
+    | ROLES ADMINISTRADORES (nativos)
+    |--------------------------------------------------------------------------
+    | Cualquier rol cuyo nombre esté en esta lista será tratado como
+    | Administrador Total por el sistema, sin importar si tiene todos
+    | los permisos marcados o no. Esto permite crear roles admin con
+    | nombres alternativos sin tocar la base de datos.
+    */
+    'roles_admin' => [
+        'Administrador',
+        'Super Admin',
+        'Admin Nacional',
+    ],
 ];

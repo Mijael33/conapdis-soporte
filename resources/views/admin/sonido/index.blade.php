@@ -6,10 +6,16 @@
     <div class="card-header bg-white d-flex justify-content-between align-items-center py-3 flex-wrap gap-2">
         <h5 class="mb-0 fw-bold">Inventario de Equipos de Sonido</h5>
         <div class="d-flex gap-2 flex-wrap">
+            @can('sonido.importar')
             <a href="{{ route('admin.sonido.importar') }}" class="btn-outline-conapdis btn-sm"><i class="bi bi-upload"></i> Importar Excel</a>
+            @endcan
+            @can('sonido.exportar')
             <a href="{{ route('admin.sonido.exportar-excel') }}" class="btn-outline-conapdis btn-sm"><i class="bi bi-file-excel"></i> Exportar Excel</a>
             <a href="{{ route('admin.sonido.exportar-pdf') }}" class="btn-outline-conapdis btn-sm"><i class="bi bi-file-pdf"></i> Exportar PDF</a>
+            @endcan
+            @can('sonido.crear')
             <a href="{{ route('admin.sonido.create') }}" class="btn-conapdis btn-sm"><i class="bi bi-plus-lg"></i> Nuevo</a>
+            @endcan
         </div>
     </div>
     <div class="card-body">
@@ -64,11 +70,15 @@
                         </td>
                         <td class="text-center" style="white-space: nowrap;">
                             <a href="{{ route('admin.sonido.show', $eq) }}" class="btn btn-sm btn-outline-conapdis me-1"><i class="bi bi-eye"></i></a>
+                            @can('sonido.editar')
                             <a href="{{ route('admin.sonido.edit', $eq) }}" class="btn btn-sm btn-outline-conapdis me-1"><i class="bi bi-pencil"></i></a>
+                            @endcan
+                            @can('sonido.eliminar')
                             <form action="{{ route('admin.sonido.destroy', $eq) }}" method="POST" class="d-inline" onsubmit="return confirm('¿Eliminar el equipo {{ $eq->serial }}?')">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
                             </form>
+                            @endcan
                         </td>
                     </tr>
                     @empty

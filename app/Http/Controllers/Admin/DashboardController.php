@@ -24,8 +24,9 @@ class DashboardController extends Controller
     public function index(Request $request)
     {
         $user = auth()->user();
-        $esAdmin = $user->hasRole('Administrador');
-        $esAuditor = $user->hasRole('Auditor');
+
+        // ¿Puede ver todo a nivel nacional?
+        $puedeVerNacional = $user->puedeVerNacional();
 
         $estados = Estado::orderBy('nombre')->get();
         $estadoId = session('filtro_estado_id');
@@ -36,16 +37,20 @@ class DashboardController extends Controller
         |--------------------------------------------------------------------------
         | HELPER LOCAL PARA APLICAR FILTRO DE SEDE/ESTADO
         |--------------------------------------------------------------------------
+        | Unificado con puedeVerNacional(): admin, auditor o rol con
+        | acceso.nacional pueden ver todo si no hay filtro en sesión.
         */
-        $aplicarFiltroSede = function ($query) use ($sedeId, $estadoId, $esAdmin, $esAuditor, $user) {
-            if ($sedeId) {
+        $aplicarFiltroSede = function ($query) use ($sedeId, $estadoId, $puedeVerNacional, $user) {
+            if (!$puedeVerNacional) {
+                // Sin acceso nacional: SIEMPRE su sede
+                $query->where('sede_id', $user->sede_id);
+            } elseif ($sedeId) {
                 $query->where('sede_id', $sedeId);
             } elseif ($estadoId) {
                 $sedeIds = Sede::where('estado_id', $estadoId)->pluck('id');
                 $query->whereIn('sede_id', $sedeIds);
-            } elseif (!$esAdmin && !$esAuditor) {
-                $query->where('sede_id', $user->sede_id);
             }
+            // Si no hay filtro en sesión, ve todo
             return $query;
         };
 
@@ -119,10 +124,8 @@ class DashboardController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | MÉTRICAS DE VALORIZACIÓN (NUEVO)
+        | MÉTRICAS DE VALORIZACIÓN
         |--------------------------------------------------------------------------
-        | Suma de valor_prudencial y valor_adquisicion por módulo.
-        | Usa COALESCE para no romper si algún valor es NULL.
         */
         $valorEquiposPrudencial = (clone $equiposQuery)->sum('valor_prudencial') ?? 0;
         $valorEquiposAdquisicion = (clone $equiposQuery)->sum('valor_adquisicion') ?? 0;
@@ -168,7 +171,7 @@ class DashboardController extends Controller
             'totalSalidas', 'salidasPendientes', 'totalEntradas',
             'totalUsuarios', 'totalEstados', 'totalSedes', 'totalRoles',
             'totalCategoriasBienes', 'totalCategoriasVehiculos', 'totalCategoriasSonido',
-            'estados', 'sedes', 'estadoId', 'sedeId', 'esAdmin', 'esAuditor',
+            'estados', 'sedes', 'estadoId', 'sedeId', 'puedeVerNacional',
             // Valorización
             'valorEquiposPrudencial', 'valorEquiposAdquisicion',
             'valorComponentesPrudencial', 'valorComponentesAdquisicion',

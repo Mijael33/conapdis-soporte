@@ -243,21 +243,37 @@ body {
     box-shadow: var(--conapdis-sombra-sm);
 }
 
+/* Encabezado de tablas - Fondo azul oscuro + texto blanco */
 .table-header {
     background: var(--conapdis-azul-oscuro) !important;
     color: var(--conapdis-blanco) !important;
 }
 
 .table-header th {
-    color: rgba(255,255,255,0.95) !important;
+    background: var(--conapdis-azul-oscuro) !important;
+    color: var(--conapdis-blanco) !important;
     font-weight: 600;
     font-size: 0.8rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
+    border-color: var(--conapdis-azul-oscuro) !important;
+    padding: 12px 8px;
 }
 
+/* Celdas del cuerpo - texto oscuro legible */
+.table tbody td {
+    color: var(--conapdis-texto-oscuro) !important;
+    vertical-align: middle;
+}
+
+/* Filas con hover */
 .table-hover tbody tr:hover {
-    background-color: #eff6ff;
+    background-color: #eff6ff !important;
+}
+
+.table-hover tbody tr:hover td {
+    background-color: #eff6ff !important;
+    color: var(--conapdis-texto-oscuro) !important;
 }
 
 /* ============================================

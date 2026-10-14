@@ -8,20 +8,32 @@ use App\Models\Sede;
 use App\Models\Estado;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
-use Maatwebsite\Excel\Concerns\WithChunkReading;
-use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
+use Maatwebsite\Excel\Concerns\WithLimit;
 use Illuminate\Support\Facades\Auth;
 
-class ComponentesImport implements ToModel, WithHeadingRow, WithChunkReading, SkipsEmptyRows
+class ComponentesImport implements ToModel, WithHeadingRow, WithLimit
 {
     protected $service;
     protected $filaActual = 1;
 
     protected array $serialesEnArchivo = [];
+    protected array $categoriasCache = [];
+    protected array $sedesCache = [];
+
+    protected $userId = null;
+    protected $userSedeId = null;
+    protected $puedeImportarCualquierSede = false;
 
     public function __construct($service = null)
     {
         $this->service = $service;
+
+        $user = Auth::user();
+        if ($user) {
+            $this->userId = $user->id;
+            $this->userSedeId = $user->sede_id;
+            $this->puedeImportarCualquierSede = $user->puedeVerNacional();
+        }
     }
 
     public function model(array $row)
@@ -33,25 +45,21 @@ class ComponentesImport implements ToModel, WithHeadingRow, WithChunkReading, Sk
         }
 
         try {
-            $user = Auth::user();
-            $esAdmin = $user->hasRole('Administrador');
+            $puedeImportarCualquierSede = $this->puedeImportarCualquierSede;
+            $userSedeId = $this->userSedeId;
 
             if (empty($row['serial_unico'])) {
                 throw new \Exception('El campo "serial_unico" es obligatorio');
             }
-
             if (empty($row['marca'])) {
                 throw new \Exception('El campo "marca" es obligatorio');
             }
-
             if (empty($row['modelo'])) {
                 throw new \Exception('El campo "modelo" es obligatorio');
             }
-
             if (empty($row['categoria'])) {
                 throw new \Exception('El campo "categoria" es obligatorio');
             }
-
             if (empty($row['sede'])) {
                 throw new \Exception('El campo "sede" es obligatorio');
             }
@@ -69,26 +77,34 @@ class ComponentesImport implements ToModel, WithHeadingRow, WithChunkReading, Sk
                 throw new \Exception('El serial "' . $serialTrim . '" ya existe en la base de datos');
             }
 
-            $categoria = CategoriaComponente::firstOrCreate(
-                ['nombre' => trim($row['categoria'])],
-                ['descripcion' => 'Creada automáticamente al importar']
-            );
-
-            $sede = Sede::where('nombre_sede', trim($row['sede']))->first();
-
-            if (!$sede) {
-                $dc = Estado::where('nombre', 'Distrito Capital')->first();
-                if ($dc) {
-                    $sede = Sede::create([
-                        'estado_id' => $dc->id,
-                        'nombre_sede' => trim($row['sede']),
-                        'direccion' => 'Dirección pendiente',
-                        'codigo_postal' => null,
-                    ]);
-                }
+            $nombreCategoria = trim($row['categoria']);
+            if (!isset($this->categoriasCache[$nombreCategoria])) {
+                $this->categoriasCache[$nombreCategoria] = CategoriaComponente::firstOrCreate(
+                    ['nombre' => $nombreCategoria],
+                    ['descripcion' => 'Creada automáticamente al importar']
+                );
             }
+            $categoria = $this->categoriasCache[$nombreCategoria];
 
-            if (!$esAdmin && $sede && $sede->id !== $user->sede_id) {
+            $nombreSede = trim($row['sede']);
+            if (!isset($this->sedesCache[$nombreSede])) {
+                $sede = Sede::where('nombre_sede', $nombreSede)->first();
+                if (!$sede) {
+                    $dc = Estado::where('nombre', 'Distrito Capital')->first();
+                    if ($dc) {
+                        $sede = Sede::create([
+                            'estado_id' => $dc->id,
+                            'nombre_sede' => $nombreSede,
+                            'direccion' => 'Dirección pendiente',
+                            'codigo_postal' => null,
+                        ]);
+                    }
+                }
+                $this->sedesCache[$nombreSede] = $sede;
+            }
+            $sede = $this->sedesCache[$nombreSede];
+
+            if (!$puedeImportarCualquierSede && $sede && $sede->id !== $userSedeId) {
                 throw new \Exception('No tiene permiso para importar en la sede: ' . $row['sede']);
             }
 
@@ -100,7 +116,7 @@ class ComponentesImport implements ToModel, WithHeadingRow, WithChunkReading, Sk
                 'marca' => trim($row['marca']),
                 'modelo' => trim($row['modelo']),
                 'serial_unico' => $serialTrim,
-                'sede_id' => $sede ? $sede->id : ($esAdmin ? null : $user->sede_id),
+                'sede_id' => $sede ? $sede->id : ($puedeImportarCualquierSede ? null : $userSedeId),
                 'estatus' => $this->normalizarEstatus($row['estatus'] ?? null),
                 'valor_prudencial' => $valorPrudencial,
                 'valor_adquisicion' => $valorAdquisicion,
@@ -127,7 +143,6 @@ class ComponentesImport implements ToModel, WithHeadingRow, WithChunkReading, Sk
                     ]
                 );
             }
-
             return null;
         }
     }
@@ -136,19 +151,15 @@ class ComponentesImport implements ToModel, WithHeadingRow, WithChunkReading, Sk
     {
         if ($valor === null || $valor === '') return null;
         if (is_numeric($valor)) return $valor;
-
         $limpio = str_replace('.', '', (string) $valor);
         $limpio = str_replace(',', '.', $limpio);
-
         return is_numeric($limpio) ? $limpio : null;
     }
 
     private function normalizarEstatus($estatus)
     {
         if (empty($estatus)) return 'Disponible';
-
         $estatus = mb_strtolower(trim($estatus));
-
         $mapa = [
             'disponible' => 'Disponible',
             'instalado' => 'Instalado',
@@ -157,12 +168,11 @@ class ComponentesImport implements ToModel, WithHeadingRow, WithChunkReading, Sk
             'revision' => 'En Revisión',
             'desincorporado' => 'Desincorporado',
         ];
-
         return $mapa[$estatus] ?? 'Disponible';
     }
 
-    public function chunkSize(): int
+    public function limit(): int
     {
-        return 500;
+        return 10000;
     }
 }

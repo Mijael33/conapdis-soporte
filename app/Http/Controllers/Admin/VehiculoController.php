@@ -24,30 +24,43 @@ class VehiculoController extends Controller
 
     public function index(Request $request)
     {
-        $sedeId = session('filtro_sede_id');
-        $estadoId = session('filtro_estado_id');
-
         $query = Vehiculo::with(['categoria', 'sede.estado']);
 
-        if ($sedeId) {
-            $query->where('sede_id', $sedeId);
-        } elseif ($estadoId) {
-            $sedeIds = Sede::where('estado_id', $estadoId)->pluck('id');
-            $query->whereIn('sede_id', $sedeIds);
-        }
+        // FILTRO GLOBAL
+        $query = $this->filtrarPorSede($query);
 
+        // Filtros locales
         if ($request->categoria_id) $query->where('categoria_vehiculo_id', $request->categoria_id);
         if ($request->estatus) $query->where('estatus', $request->estatus);
+
+        // BÚSQUEDA AMPLIADA
         if ($request->search) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
-                $q->where('placa', 'ILIKE', "%{$search}%")
+                $q->where('codigo_inventario', 'ILIKE', "%{$search}%")
+                  ->orWhere('placa', 'ILIKE', "%{$search}%")
                   ->orWhere('marca', 'ILIKE', "%{$search}%")
-                  ->orWhere('modelo', 'ILIKE', "%{$search}%");
+                  ->orWhere('modelo', 'ILIKE', "%{$search}%")
+                  ->orWhere('color', 'ILIKE', "%{$search}%")
+                  ->orWhere('serial_motor', 'ILIKE', "%{$search}%")
+                  ->orWhere('serial_carroceria', 'ILIKE', "%{$search}%")
+                  ->orWhere('estatus', 'ILIKE', "%{$search}%")
+                  ->orWhere('usuario_asignado_nombre', 'ILIKE', "%{$search}%")
+                  ->orWhere('usuario_asignado_cedula', 'ILIKE', "%{$search}%")
+                  ->orWhere('usuario_asignado_cargo', 'ILIKE', "%{$search}%")
+                  ->orWhereHas('categoria', function ($q2) use ($search) {
+                      $q2->where('nombre', 'ILIKE', "%{$search}%");
+                  })
+                  ->orWhereHas('sede', function ($q2) use ($search) {
+                      $q2->where('nombre_sede', 'ILIKE', "%{$search}%")
+                         ->orWhereHas('estado', function ($q3) use ($search) {
+                             $q3->where('nombre', 'ILIKE', "%{$search}%");
+                         });
+                  });
             });
         }
 
-        $vehiculos = $query->orderBy('placa')->paginate(15);
+        $vehiculos = $query->orderBy('id', 'desc')->paginate(15);
         $categorias = CategoriaVehiculo::orderBy('nombre')->get();
 
         return view('admin.vehiculos.index', compact('vehiculos', 'categorias'));
@@ -88,6 +101,11 @@ class VehiculoController extends Controller
             'valor_adquisicion' => 'nullable|numeric|min:0',
             'observaciones' => 'nullable|string',
         ]);
+
+        // Forzar la sede del usuario si no tiene acceso nacional
+        if (!auth()->user()->puedeVerNacional()) {
+            $validated['sede_id'] = auth()->user()->sede_id;
+        }
 
         if (empty($validated['valor_prudencial']) && empty($validated['valor_adquisicion'])) {
             return back()->with('error', 'Debe ingresar al menos uno de los dos valores: Valor Prudencial o Valor de Adquisición.')->withInput();
@@ -139,6 +157,11 @@ class VehiculoController extends Controller
             'valor_adquisicion' => 'nullable|numeric|min:0',
             'observaciones' => 'nullable|string',
         ]);
+
+        // Forzar la sede del usuario si no tiene acceso nacional
+        if (!auth()->user()->puedeVerNacional()) {
+            $validated['sede_id'] = auth()->user()->sede_id;
+        }
 
         if (empty($validated['valor_prudencial']) && empty($validated['valor_adquisicion'])) {
             return back()->with('error', 'Debe ingresar al menos uno de los dos valores: Valor Prudencial o Valor de Adquisición.')->withInput();
@@ -212,13 +235,11 @@ class VehiculoController extends Controller
     public function exportarPDF()
     {
         $user = auth()->user();
-        $esAdmin = $user->hasRole('Administrador');
-        $esAuditor = $user->hasRole('Auditor');
         $sedeId = session('filtro_sede_id');
         $estadoId = session('filtro_estado_id');
 
         $query = Vehiculo::with(['categoria', 'sede.estado']);
-        if (!$esAdmin && !$esAuditor) {
+        if (!$user->puedeVerNacional()) {
             $query->where('sede_id', $user->sede_id);
         } elseif ($sedeId) {
             $query->where('sede_id', $sedeId);
@@ -227,7 +248,7 @@ class VehiculoController extends Controller
             $query->whereIn('sede_id', $sedeIds);
         }
 
-        $vehiculos = $query->orderBy('placa')->get();
+        $vehiculos = $query->orderBy('id', 'asc')->get();
         $pdf = Pdf::loadView('admin.vehiculos.pdf', compact('vehiculos'));
         $pdf->setPaper('letter', 'landscape');
         return $pdf->download('vehiculos-' . date('Y-m-d') . '.pdf');

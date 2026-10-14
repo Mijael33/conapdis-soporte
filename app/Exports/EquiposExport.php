@@ -22,14 +22,13 @@ class EquiposExport implements FromCollection, WithHeadings, WithMapping, Should
     public function collection()
     {
         $user = auth()->user();
-        $esAdmin = $user->hasRole('Administrador');
-        $esAuditor = $user->hasRole('Auditor');
         $sedeId = session('filtro_sede_id');
         $estadoId = session('filtro_estado_id');
 
         $query = Equipo::with(['tipoEquipo', 'sede.estado', 'componentes']);
 
-        if (!$esAdmin && !$esAuditor) {
+        // FILTRO GLOBAL (Sede/Estado) - consistente con el index
+        if (!$user->puedeVerNacional()) {
             $query->where('sede_id', $user->sede_id);
         } elseif ($sedeId) {
             $query->where('sede_id', $sedeId);
@@ -38,12 +37,15 @@ class EquiposExport implements FromCollection, WithHeadings, WithMapping, Should
             $query->whereIn('sede_id', $sedeIds);
         }
 
+        // FILTROS LOCALES del index (si vienen del request)
         if ($this->request->filled('estatus')) {
             $query->where('estatus_general', $this->request->estatus);
         }
         if ($this->request->filled('sede_id')) {
             $query->where('sede_id', $this->request->sede_id);
         }
+
+        // BÚSQUEDA AMPLIADA (mismo criterio que el index)
         if ($this->request->filled('search')) {
             $search = $this->request->search;
             $query->where(function ($q) use ($search) {
@@ -51,12 +53,24 @@ class EquiposExport implements FromCollection, WithHeadings, WithMapping, Should
                   ->orWhere('serial_chasis', 'ILIKE', "%{$search}%")
                   ->orWhere('marca', 'ILIKE', "%{$search}%")
                   ->orWhere('modelo', 'ILIKE', "%{$search}%")
+                  ->orWhere('estatus_general', 'ILIKE', "%{$search}%")
                   ->orWhere('usuario_asignado_nombre', 'ILIKE', "%{$search}%")
-                  ->orWhere('usuario_asignado_cedula', 'ILIKE', "%{$search}%");
+                  ->orWhere('usuario_asignado_cedula', 'ILIKE', "%{$search}%")
+                  ->orWhere('usuario_asignado_cargo', 'ILIKE', "%{$search}%")
+                  ->orWhereHas('tipoEquipo', function ($q2) use ($search) {
+                      $q2->where('nombre', 'ILIKE', "%{$search}%");
+                  })
+                  ->orWhereHas('sede', function ($q2) use ($search) {
+                      $q2->where('nombre_sede', 'ILIKE', "%{$search}%")
+                         ->orWhereHas('estado', function ($q3) use ($search) {
+                             $q3->where('nombre', 'ILIKE', "%{$search}%");
+                         });
+                  });
             });
         }
 
-        return $query->orderBy('codigo_inventario_institucional')->get();
+        // Orden: mismo criterio del index (más reciente primero)
+        return $query->orderBy('id', 'asc')->get();
     }
 
     public function headings(): array

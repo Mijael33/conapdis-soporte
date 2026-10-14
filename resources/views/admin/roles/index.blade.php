@@ -30,13 +30,27 @@
                         </tr>
                     </thead>
                     <tbody>
+                        @php
+                            $totalPermisos = \Spatie\Permission\Models\Permission::count();
+                            $rolesAdminConfig = config('institucional.roles_admin', ['Administrador']);
+                        @endphp
+
                         @forelse($roles as $role)
+                        @php
+                            // Es admin si: su nombre está en config roles_admin O tiene TODOS los permisos
+                            $esAdmin = in_array($role->name, $rolesAdminConfig, true)
+                                       || ($totalPermisos > 0 && $role->permissions->count() >= $totalPermisos);
+
+                            // Tiene acceso nacional si: es admin O tiene el permiso acceso.nacional
+                            $tieneAccesoNacional = $esAdmin || $role->permissions->contains('name', 'acceso.nacional');
+                        @endphp
                         <tr>
                             <td class="fw-semibold text-muted">#{{ $role->id }}</td>
                             <td>
                                 <div class="d-flex align-items-center gap-2">
-                                    <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; background: {{ $role->name === 'Administrador' ? '#fef3c7' : '#dbeafe' }};">
-                                        <i class="bi {{ $role->name === 'Administrador' ? 'bi-crown-fill text-warning' : 'bi-shield-fill text-primary' }}"></i>
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center" 
+                                         style="width: 40px; height: 40px; background: {{ $esAdmin ? '#fef3c7' : '#dbeafe' }};">
+                                        <i class="bi {{ $esAdmin ? 'bi-crown-fill text-warning' : 'bi-shield-fill text-primary' }}"></i>
                                     </div>
                                     <div>
                                         <div class="fw-bold" style="color: #001e5c;">{{ $role->name }}</div>
@@ -45,15 +59,21 @@
                                 </div>
                             </td>
                             <td>
-                                @if($role->name === 'Administrador')
-                                    <span class="badge rounded-pill" style="background: #fef3c7; color: #a16207;">
+                                @if($esAdmin)
+                                    <span class="badge rounded-pill me-1 mb-1" style="background: #fef3c7; color: #a16207;">
                                         <i class="bi bi-crown-fill me-1"></i>Acceso Total
                                     </span>
                                 @else
+                                    @if($tieneAccesoNacional)
+                                        <span class="badge rounded-pill me-1 mb-1" style="background: #d1fae5; color: #065f46;">
+                                            <i class="bi bi-globe-americas me-1"></i>Acceso Nacional
+                                        </span>
+                                    @endif
                                     @php
                                         $porModulo = $role->permissions->groupBy('modulo');
                                     @endphp
                                     @forelse($porModulo as $modulo => $perms)
+                                        @if($modulo === 'acceso_nacional') @continue @endif
                                         <span class="badge rounded-pill me-1 mb-1" style="background: #dbeafe; color: #003097;">
                                             {{ ucfirst(str_replace('_', ' ', $modulo)) }}
                                             <span class="ms-1 opacity-75">({{ $perms->count() }})</span>
@@ -73,7 +93,7 @@
                                     <a href="{{ route('admin.roles.edit', $role) }}" class="btn btn-sm btn-outline-conapdis" title="Editar">
                                         <i class="bi bi-pencil"></i>
                                     </a>
-                                    @if($role->name !== 'Administrador')
+                                    @if(!$esAdmin)
                                     <form action="{{ route('admin.roles.destroy', $role) }}" method="POST" class="d-inline">
                                         @csrf @method('DELETE')
                                         <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('¿Eliminar el rol {{ $role->name }}?')" title="Eliminar">

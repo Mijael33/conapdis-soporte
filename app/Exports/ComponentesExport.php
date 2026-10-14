@@ -14,14 +14,13 @@ class ComponentesExport implements FromCollection, WithHeadings, WithMapping, Sh
     public function collection()
     {
         $user = auth()->user();
-        $esAdmin = $user->hasRole('Administrador');
-        $esAuditor = $user->hasRole('Auditor');
         $sedeId = session('filtro_sede_id');
         $estadoId = session('filtro_estado_id');
 
         $query = Componente::with(['categoria', 'sede.estado', 'equipoActual']);
 
-        if (!$esAdmin && !$esAuditor) {
+        // FILTRO GLOBAL
+        if (!$user->puedeVerNacional()) {
             $query->where('sede_id', $user->sede_id);
         } elseif ($sedeId) {
             $query->where('sede_id', $sedeId);
@@ -30,7 +29,39 @@ class ComponentesExport implements FromCollection, WithHeadings, WithMapping, Sh
             $query->whereIn('sede_id', $sedeIds);
         }
 
-        return $query->orderBy('serial_unico')->get();
+        // Filtros del request (por si el index los envía)
+        $request = request();
+
+        if ($request->filled('categoria_id')) {
+            $query->where('categoria_componente_id', $request->categoria_id);
+        }
+        if ($request->filled('estatus')) {
+            $query->where('estatus', $request->estatus);
+        }
+
+        // BÚSQUEDA AMPLIADA
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('serial_unico', 'ILIKE', "%{$search}%")
+                  ->orWhere('marca', 'ILIKE', "%{$search}%")
+                  ->orWhere('modelo', 'ILIKE', "%{$search}%")
+                  ->orWhere('estatus', 'ILIKE', "%{$search}%")
+                  ->orWhere('observaciones', 'ILIKE', "%{$search}%")
+                  ->orWhereHas('categoria', function ($q2) use ($search) {
+                      $q2->where('nombre', 'ILIKE', "%{$search}%");
+                  })
+                  ->orWhereHas('sede', function ($q2) use ($search) {
+                      $q2->where('nombre_sede', 'ILIKE', "%{$search}%")
+                         ->orWhereHas('estado', function ($q3) use ($search) {
+                             $q3->where('nombre', 'ILIKE', "%{$search}%");
+                         });
+                  });
+            });
+        }
+
+        // Orden: más antiguo primero (orden de importación)
+        return $query->orderBy('id', 'asc')->get();
     }
 
     public function headings(): array

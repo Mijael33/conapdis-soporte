@@ -15,7 +15,7 @@ class UsuarioController extends Controller
 {
     public function index()
     {
-        if (!auth()->user()->hasRole('Administrador')) {
+        if (!auth()->user()->esAdmin()) {
             abort(403, 'No autorizado');
         }
         $usuarios = User::with('roles')->orderBy('name')->paginate(15);
@@ -24,7 +24,7 @@ class UsuarioController extends Controller
 
     public function create()
     {
-        if (!auth()->user()->hasRole('Administrador')) {
+        if (!auth()->user()->esAdmin()) {
             abort(403, 'No autorizado');
         }
         $roles = Role::orderBy('name')->get();
@@ -35,7 +35,7 @@ class UsuarioController extends Controller
 
     public function store(Request $request)
     {
-        if (!auth()->user()->hasRole('Administrador')) {
+        if (!auth()->user()->esAdmin()) {
             abort(403, 'No autorizado');
         }
         $validated = $request->validate([
@@ -74,7 +74,7 @@ class UsuarioController extends Controller
     public function show($id)
     {
         $usuario = User::findOrFail($id);
-        if (!auth()->user()->hasRole('Administrador') && auth()->id() != $usuario->id) {
+        if (!auth()->user()->esAdmin() && auth()->id() != $usuario->id) {
             abort(403);
         }
         return view('admin.usuarios.show', compact('usuario'));
@@ -83,11 +83,11 @@ class UsuarioController extends Controller
     public function edit($id)
     {
         $usuario = User::findOrFail($id);
-        if (!auth()->user()->hasRole('Administrador') && auth()->id() != $usuario->id) {
+        if (!auth()->user()->esAdmin() && auth()->id() != $usuario->id) {
             abort(403);
         }
 
-        $esAdmin = auth()->user()->hasRole('Administrador');
+        $esAdmin = auth()->user()->esAdmin();
         $roles = $esAdmin ? Role::orderBy('name')->get() : collect([]);
         $userRoles = $usuario->roles->pluck('id')->toArray();
         $estados = $esAdmin ? Estado::orderBy('nombre')->get() : collect([]);
@@ -99,7 +99,7 @@ class UsuarioController extends Controller
     public function update(Request $request, $id)
     {
         $usuario = User::findOrFail($id);
-        $esAdmin = auth()->user()->hasRole('Administrador');
+        $esAdmin = auth()->user()->esAdmin();
 
         if (!$esAdmin && auth()->id() != $usuario->id) {
             abort(403);
@@ -154,7 +154,7 @@ class UsuarioController extends Controller
 
     public function destroy($id)
     {
-        if (!auth()->user()->hasRole('Administrador')) {
+        if (!auth()->user()->esAdmin()) {
             abort(403);
         }
         $usuario = User::findOrFail($id);

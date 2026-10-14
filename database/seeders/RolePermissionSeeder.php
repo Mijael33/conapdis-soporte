@@ -10,6 +10,21 @@ class RolePermissionSeeder extends Seeder
 {
     public function run(): void
     {
+        /*
+        |--------------------------------------------------------------------------
+        | PERMISOS ESPECIALES (fuera de módulos)
+        |--------------------------------------------------------------------------
+        */
+        Permission::firstOrCreate(
+            ['name' => 'acceso.nacional', 'guard_name' => 'web'],
+            ['modulo' => 'acceso_nacional']
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | PERMISOS POR MÓDULO
+        |--------------------------------------------------------------------------
+        */
         $modulos = [
             'dashboard' => [
                 'dashboard.ver',

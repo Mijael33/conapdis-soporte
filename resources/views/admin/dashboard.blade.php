@@ -7,7 +7,7 @@
 {{-- ============================================================
      FILTRO GLOBAL
      ============================================================ --}}
-@if(auth()->user()->hasRole('Administrador') || auth()->user()->hasRole('Auditor'))
+@if($puedeVerNacional)
 <div class="card border-0 shadow-sm rounded-4 mb-4">
     <div class="card-body p-4">
         <h6 class="fw-bold mb-3" style="color: #1a3b5d;">
@@ -17,6 +17,7 @@
             Filtro Global - Se aplica a todo el sistema
         </h6>
         <form method="GET" class="row g-3">
+            <input type="hidden" name="aplicar_filtro_global" value="1">
             <div class="col-md-4">
                 <label class="form-label fw-semibold">Estado</label>
                 <select name="estado_id" id="estadoSelect" class="form-select rounded-3" onchange="cargarSedes()">
@@ -52,7 +53,7 @@
 <h2 class="mb-4" style="color: #1a3b5d; font-weight: 700;">Panel de Control</h2>
 
 {{-- ============================================================
-     RESUMEN GENERAL
+     RESUMEN GENERAL (siempre visible)
      ============================================================ --}}
 <div class="row g-3 mb-4">
     @php
@@ -86,6 +87,7 @@
 {{-- ============================================================
      MÓDULO: TECNOLOGÍA
      ============================================================ --}}
+@can('tecnologia.equipos.ver')
 <div class="card border-0 shadow-sm rounded-4 mb-4">
     <div class="card-body p-4">
         <div class="d-flex align-items-center mb-3">
@@ -133,10 +135,12 @@
         </div>
     </div>
 </div>
+@endcan
 
 {{-- ============================================================
      MÓDULO: BIENES NACIONALES
      ============================================================ --}}
+@can('bienes.ver')
 <div class="card border-0 shadow-sm rounded-4 mb-4">
     <div class="card-body p-4">
         <div class="d-flex align-items-center mb-3">
@@ -183,10 +187,12 @@
         </div>
     </div>
 </div>
+@endcan
 
 {{-- ============================================================
      MÓDULO: VEHÍCULOS
      ============================================================ --}}
+@can('vehiculos.ver')
 <div class="card border-0 shadow-sm rounded-4 mb-4">
     <div class="card-body p-4">
         <div class="d-flex align-items-center mb-3">
@@ -236,10 +242,12 @@
         </div>
     </div>
 </div>
+@endcan
 
 {{-- ============================================================
      MÓDULO: EQUIPOS DE SONIDO
      ============================================================ --}}
+@can('sonido.ver')
 <div class="card border-0 shadow-sm rounded-4 mb-4">
     <div class="card-body p-4">
         <div class="d-flex align-items-center mb-3">
@@ -287,10 +295,12 @@
         </div>
     </div>
 </div>
+@endcan
 
 {{-- ============================================================
      MÓDULO: ENTRADA / SALIDA
      ============================================================ --}}
+@can('entrada-salida.ver')
 <div class="card border-0 shadow-sm rounded-4 mb-4">
     <div class="card-body p-4">
         <div class="d-flex align-items-center mb-3">
@@ -340,10 +350,12 @@
         </div>
     </div>
 </div>
+@endcan
 
 {{-- ============================================================
      MÓDULO: ESTRUCTURA Y USUARIOS
      ============================================================ --}}
+@if(auth()->user()->can('usuarios.ver') || auth()->user()->can('roles.ver') || auth()->user()->can('estados.ver'))
 <div class="card border-0 shadow-sm rounded-4 mb-4">
     <div class="card-body p-4">
         <div class="d-flex align-items-center mb-3">
@@ -391,10 +403,12 @@
         </div>
     </div>
 </div>
+@endif
 
 {{-- ============================================================
-     GRÁFICOS
+     GRÁFICOS (solo si tiene al menos un módulo de inventario)
      ============================================================ --}}
+@if(auth()->user()->can('tecnologia.equipos.ver') || auth()->user()->can('bienes.ver') || auth()->user()->can('vehiculos.ver') || auth()->user()->can('sonido.ver') || auth()->user()->can('entrada-salida.ver'))
 <div class="row g-4 mb-4">
     <div class="col-lg-8">
         <div class="card border-0 shadow-sm rounded-4 p-4">
@@ -413,6 +427,7 @@
         </div>
     </div>
 </div>
+@endif
 
 {{-- ============================================================
      INDICADOR DE FILTRO ACTIVO
@@ -435,20 +450,45 @@
 function cargarSedes() {
     const estadoId = document.getElementById('estadoSelect').value;
     const sedeSelect = document.getElementById('sedeSelect');
+    const sedeIdActual = "{{ session('filtro_sede_id') }}";
+
     sedeSelect.innerHTML = '<option value="">Cargando...</option>';
+
     if (!estadoId) {
         sedeSelect.innerHTML = '<option value="">Todas las sedes</option>';
         return;
     }
+
     fetch(`{{ url('panel') }}/api/sedes/${estadoId}`)
         .then(r => r.json())
         .then(sedes => {
+            sedeSelect.innerHTML = '';
+
+            if (sedes.length === 0) {
+                sedeSelect.innerHTML = '<option value="">Sin sedes registradas</option>';
+                return;
+            }
+
+            if (sedes.length === 1) {
+                const sede = sedes[0];
+                sedeSelect.innerHTML = `<option value="${sede.id}" selected>${sede.nombre_sede}</option>`;
+                return;
+            }
+
             sedeSelect.innerHTML = '<option value="">Todas las sedes</option>';
-            sedes.forEach(s => sedeSelect.innerHTML += `<option value="${s.id}">${s.nombre_sede}</option>`);
+            sedes.forEach(s => {
+                const selected = (sedeIdActual && String(sedeIdActual) === String(s.id)) ? 'selected' : '';
+                sedeSelect.innerHTML += `<option value="${s.id}" ${selected}>${s.nombre_sede}</option>`;
+            });
+        })
+        .catch(err => {
+            console.error('Error cargando sedes:', err);
+            sedeSelect.innerHTML = '<option value="">Error al cargar</option>';
         });
 }
 </script>
 
+@if(auth()->user()->can('tecnologia.equipos.ver') || auth()->user()->can('bienes.ver') || auth()->user()->can('vehiculos.ver') || auth()->user()->can('sonido.ver') || auth()->user()->can('entrada-salida.ver'))
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 const statsData = [
@@ -502,4 +542,5 @@ new Chart(ctxPie, {
     }
 });
 </script>
+@endif
 @endpush

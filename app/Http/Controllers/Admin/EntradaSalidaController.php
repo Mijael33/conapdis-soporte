@@ -24,14 +24,45 @@ class EntradaSalidaController extends Controller
 {
     use FiltroSedeTrait;
 
+    /**
+     * Aplica el filtro global de sede/estado a un query según los permisos
+     * del usuario y el filtro guardado en sesión.
+     *
+     * - Sin acceso nacional → siempre su sede.
+     * - Con acceso nacional + filtro sede → esa sede.
+     * - Con acceso nacional + filtro estado → todas las sedes del estado.
+     * - Con acceso nacional sin filtro → todas.
+     */
+    private function aplicarFiltroGlobal($query)
+    {
+        $user = auth()->user();
+        $sedeId = session('filtro_sede_id');
+        $estadoId = session('filtro_estado_id');
+
+        if (!$user->puedeVerNacional()) {
+            $query->where('sede_id', $user->sede_id);
+        } elseif ($sedeId) {
+            $query->where('sede_id', $sedeId);
+        } elseif ($estadoId) {
+            $sedeIds = Sede::where('estado_id', $estadoId)->pluck('id');
+            $query->whereIn('sede_id', $sedeIds);
+        }
+
+        return $query;
+    }
+
     public function index(Request $request)
     {
+        $user = auth()->user();
         $sedeId = session('filtro_sede_id');
         $estadoId = session('filtro_estado_id');
 
         $query = RegistroEntradaSalida::with(['sede.estado', 'salidaUsuario', 'entradaUsuario']);
 
-        if ($sedeId) {
+        if (!$user->puedeVerNacional()) {
+            // Usuario sin acceso nacional: SIEMPRE su sede
+            $query->where('sede_id', $user->sede_id);
+        } elseif ($sedeId) {
             $query->where('sede_id', $sedeId);
         } elseif ($estadoId) {
             $sedeIds = Sede::where('estado_id', $estadoId)->pluck('id');
@@ -53,7 +84,7 @@ class EntradaSalidaController extends Controller
             });
         }
 
-        $registros = $query->orderBy('created_at', 'desc')->paginate(20);
+        $registros = $query->orderBy('id', 'desc')->paginate(20);
 
         $pendientes = RegistroEntradaSalida::pendientes()->count();
         $completados = RegistroEntradaSalida::completados()->count();
@@ -63,10 +94,19 @@ class EntradaSalidaController extends Controller
 
     public function create()
     {
-        $equipos = Equipo::orderBy('codigo_inventario_institucional')->get();
-        $bienes = BienNacional::orderBy('codigo_inventario')->get();
-        $vehiculos = Vehiculo::orderBy('placa')->get();
-        $sonido = EquipoSonido::orderBy('serial')->get();
+        // Filtra los bienes según permisos del usuario y filtro de sesión.
+        $equipos = $this->aplicarFiltroGlobal(Equipo::with('sede'))
+            ->orderBy('codigo_inventario_institucional')->get();
+
+        $bienes = $this->aplicarFiltroGlobal(BienNacional::with('sede'))
+            ->orderBy('codigo_inventario')->get();
+
+        $vehiculos = $this->aplicarFiltroGlobal(Vehiculo::with('sede'))
+            ->orderBy('placa')->get();
+
+        $sonido = $this->aplicarFiltroGlobal(EquipoSonido::with('sede'))
+            ->orderBy('serial')->get();
+
         $sedes = Sede::with('estado')->orderBy('nombre_sede')->get();
 
         return view('admin.entrada_salida.create', compact('equipos', 'bienes', 'vehiculos', 'sonido', 'sedes'));
@@ -74,19 +114,9 @@ class EntradaSalidaController extends Controller
 
     public function store(Request $request)
     {
-        // FORZAR SEDE SI NO ES ADMIN/AUDITOR
-        $user = auth()->user();
-        $esAdmin = $user->hasRole('Administrador');
-        $esAuditor = $user->hasRole('Auditor');
-        
-        if (!$esAdmin && !$esAuditor) {
-            $request->merge(['sede_id' => $user->sede_id]);
-        }
-
         $validated = $request->validate([
             'bien_tipo' => 'required|in:Tecnologia,BienNacional,Vehiculo,Sonido',
             'bien_id' => 'required|integer',
-            'sede_id' => 'required|exists:sedes,id',
             'salida_autoriza_nombre' => 'required|string|max:150',
             'salida_autoriza_cedula' => 'required|string|max:20',
             'salida_autoriza_cargo' => 'required|string|max:150',
@@ -105,12 +135,17 @@ class EntradaSalidaController extends Controller
         try {
             $infoBien = $this->obtenerInfoBien($request->bien_tipo, $request->bien_id);
 
+            // LA SEDE SE TOMA DEL BIEN, NO DEL REQUEST
+            if (empty($infoBien['sede_id'])) {
+                return back()->with('error', 'No se pudo determinar la sede del bien seleccionado.')->withInput();
+            }
+
             $registro = RegistroEntradaSalida::create([
                 'bien_tipo' => $request->bien_tipo,
                 'bien_id' => $request->bien_id,
                 'bien_codigo' => $infoBien['codigo'],
                 'bien_descripcion' => $infoBien['descripcion'],
-                'sede_id' => $request->sede_id,
+                'sede_id' => $infoBien['sede_id'],
                 'fecha_hora_salida' => now(),
                 'zona_horaria' => config('app.timezone', 'America/Caracas'),
                 'salida_autoriza_nombre' => $request->salida_autoriza_nombre,
@@ -228,10 +263,19 @@ class EntradaSalidaController extends Controller
                 ->with('error', 'No se puede editar un movimiento ya completado.');
         }
 
-        $equipos = Equipo::orderBy('codigo_inventario_institucional')->get();
-        $bienes = BienNacional::orderBy('codigo_inventario')->get();
-        $vehiculos = Vehiculo::orderBy('placa')->get();
-        $sonido = EquipoSonido::orderBy('serial')->get();
+        // Filtra los bienes según permisos del usuario y filtro de sesión.
+        $equipos = $this->aplicarFiltroGlobal(Equipo::with('sede'))
+            ->orderBy('codigo_inventario_institucional')->get();
+
+        $bienes = $this->aplicarFiltroGlobal(BienNacional::with('sede'))
+            ->orderBy('codigo_inventario')->get();
+
+        $vehiculos = $this->aplicarFiltroGlobal(Vehiculo::with('sede'))
+            ->orderBy('placa')->get();
+
+        $sonido = $this->aplicarFiltroGlobal(EquipoSonido::with('sede'))
+            ->orderBy('serial')->get();
+
         $sedes = Sede::with('estado')->orderBy('nombre_sede')->get();
 
         return view('admin.entrada_salida.edit', compact('registro', 'equipos', 'bienes', 'vehiculos', 'sonido', 'sedes'));
@@ -246,17 +290,7 @@ class EntradaSalidaController extends Controller
                 ->with('error', 'No se puede editar un movimiento ya completado.');
         }
 
-        // FORZAR SEDE SI NO ES ADMIN/AUDITOR
-        $user = auth()->user();
-        $esAdmin = $user->hasRole('Administrador');
-        $esAuditor = $user->hasRole('Auditor');
-
-        if (!$esAdmin && !$esAuditor) {
-            $request->merge(['sede_id' => $user->sede_id]);
-        }
-
         $validated = $request->validate([
-            'sede_id' => 'required|exists:sedes,id',
             'salida_autoriza_nombre' => 'required|string|max:150',
             'salida_autoriza_cedula' => 'required|string|max:20',
             'salida_autoriza_cargo' => 'required|string|max:150',
@@ -340,14 +374,12 @@ class EntradaSalidaController extends Controller
     public function pdfListado(Request $request)
     {
         $user = auth()->user();
-        $esAdmin = $user->hasRole('Administrador');
-        $esAuditor = $user->hasRole('Auditor');
         $sedeId = session('filtro_sede_id');
         $estadoId = session('filtro_estado_id');
 
         $query = RegistroEntradaSalida::with(['sede.estado', 'salidaUsuario', 'entradaUsuario']);
 
-        if (!$esAdmin && !$esAuditor) {
+        if (!$user->puedeVerNacional()) {
             $query->where('sede_id', $user->sede_id);
         } elseif ($sedeId) {
             $query->where('sede_id', $sedeId);
@@ -359,7 +391,7 @@ class EntradaSalidaController extends Controller
         if ($request->estatus) $query->where('estatus', $request->estatus);
         if ($request->bien_tipo) $query->where('bien_tipo', $request->bien_tipo);
 
-        $registros = $query->orderBy('created_at', 'desc')->get();
+        $registros = $query->orderBy('id', 'asc')->get();
 
         $pdf = Pdf::loadView('admin.entrada_salida.pdf_listado', compact('registros'));
         $pdf->setPaper('letter', 'landscape');
@@ -373,6 +405,10 @@ class EntradaSalidaController extends Controller
         return Excel::download(new EntradaSalidaExport, 'movimientos-' . date('Y-m-d') . '.xlsx');
     }
 
+    /**
+     * Obtiene la info del bien y también la sede del mismo.
+     * La sede se toma del bien, NO del request.
+     */
     private function obtenerInfoBien($tipo, $id): array
     {
         return match ($tipo) {
@@ -381,6 +417,7 @@ class EntradaSalidaController extends Controller
                 return [
                     'codigo' => $bien->codigo_inventario_institucional ?? 'N/A',
                     'descripcion' => $bien ? ($bien->marca . ' ' . $bien->modelo) : 'N/A',
+                    'sede_id' => $bien->sede_id ?? null,
                 ];
             })(),
             'BienNacional' => (function () use ($id) {
@@ -388,6 +425,7 @@ class EntradaSalidaController extends Controller
                 return [
                     'codigo' => $bien->codigo_inventario ?? 'N/A',
                     'descripcion' => $bien->descripcion ?? 'N/A',
+                    'sede_id' => $bien->sede_id ?? null,
                 ];
             })(),
             'Vehiculo' => (function () use ($id) {
@@ -395,6 +433,7 @@ class EntradaSalidaController extends Controller
                 return [
                     'codigo' => $bien->placa ?? 'N/A',
                     'descripcion' => $bien ? ($bien->marca . ' ' . $bien->modelo) : 'N/A',
+                    'sede_id' => $bien->sede_id ?? null,
                 ];
             })(),
             'Sonido' => (function () use ($id) {
@@ -402,9 +441,10 @@ class EntradaSalidaController extends Controller
                 return [
                     'codigo' => $bien->serial ?? 'N/A',
                     'descripcion' => $bien ? ($bien->marca . ' ' . $bien->modelo) : 'N/A',
+                    'sede_id' => $bien->sede_id ?? null,
                 ];
             })(),
-            default => ['codigo' => 'N/A', 'descripcion' => 'N/A'],
+            default => ['codigo' => 'N/A', 'descripcion' => 'N/A', 'sede_id' => null],
         };
     }
 }

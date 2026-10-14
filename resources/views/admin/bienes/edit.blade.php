@@ -29,13 +29,19 @@
                 </div>
                 <div class="col-md-4">
                     <label class="form-label fw-semibold">Sede *</label>
-                    <select name="sede_id" class="form-select rounded-3" required>
-                        <option value="">Seleccione</option>
-                        @foreach($sedes as $sede)
-                            <option value="{{ $sede->id }}" {{ old('sede_id', $bien->sede_id)==$sede->id ? 'selected' : '' }}>{{ $sede->nombre_sede }} ({{ $sede->estado->nombre }})</option>
-                        @endforeach
-                    </select>
-                    @error('sede_id') <small class="text-danger">{{ $message }}</small> @enderror
+                    @if(auth()->user()->puedeVerNacional())
+                        <select name="sede_id" class="form-select rounded-3" required>
+                            <option value="">Seleccione</option>
+                            @foreach($sedes as $sede)
+                                <option value="{{ $sede->id }}" {{ old('sede_id', $bien->sede_id)==$sede->id ? 'selected' : '' }}>{{ $sede->nombre_sede }} ({{ $sede->estado->nombre }})</option>
+                            @endforeach
+                        </select>
+                        @error('sede_id') <small class="text-danger">{{ $message }}</small> @enderror
+                    @else
+                        <input type="text" class="form-control rounded-3" value="{{ $bien->sede->nombre_sede ?? auth()->user()->sede->nombre_sede ?? 'N/A' }}" readonly>
+                        <input type="hidden" name="sede_id" value="{{ $bien->sede_id ?? auth()->user()->sede_id }}">
+                        <small class="text-muted">No podés cambiar la sede del bien.</small>
+                    @endif
                 </div>
                 <div class="col-md-12">
                     <label class="form-label fw-semibold">Descripción *</label>
